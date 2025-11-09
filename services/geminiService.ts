@@ -307,11 +307,25 @@ Retorne um array de objetos JSON. Cada objeto deve seguir esta estrutura:
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = new RegExp("```json\\s*([\\s\\S]*?)\\s*```");
-        const match = textToParse.match(jsonRegex);
-        if (match && match[1]) {
-            textToParse = match[1];
+        
+        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
+        // Procura o início e o fim do bloco de código JSON.
+        const jsonStartMarker = "```json";
+        const jsonEndMarker = "```";
+
+        let startIndex = textToParse.indexOf(jsonStartMarker);
+
+        // Se encontrou o marcador ```json, extrai o conteúdo.
+        if (startIndex !== -1) {
+            startIndex += jsonStartMarker.length; // Pula o marcador inicial
+            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+            
+            if (endIndex > startIndex) {
+                textToParse = textToParse.slice(startIndex, endIndex).trim();
+            }
         }
+        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
+        // A lógica de JSON.parse() abaixo cuidará da validação.
 
         const parsedData = JSON.parse(textToParse);
         if (Array.isArray(parsedData)) {
@@ -396,11 +410,25 @@ ${JSON.stringify(existingInsumos)}
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = new RegExp("```json\\s*([\\s\\S]*?)\\s*```");
-        const match = textToParse.match(jsonRegex);
-        if (match && match[1]) {
-            textToParse = match[1];
+        
+        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
+        // Procura o início e o fim do bloco de código JSON.
+        const jsonStartMarker = "```json";
+        const jsonEndMarker = "```";
+
+        let startIndex = textToParse.indexOf(jsonStartMarker);
+
+        // Se encontrou o marcador ```json, extrai o conteúdo.
+        if (startIndex !== -1) {
+            startIndex += jsonStartMarker.length; // Pula o marcador inicial
+            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+            
+            if (endIndex > startIndex) {
+                textToParse = textToParse.slice(startIndex, endIndex).trim();
+            }
         }
+        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
+        // A lógica de JSON.parse() abaixo cuidará da validação.
         
         const results: BatchSimilarityResult[] = JSON.parse(textToParse);
         if (Array.isArray(results)) {
@@ -923,11 +951,25 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = new RegExp("```json\\s*([\\s\\S]*?)\\s*```");
-        const match = textToParse.match(jsonRegex);
-        if (match && match[1]) {
-            textToParse = match[1];
+        
+        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
+        // Procura o início e o fim do bloco de código JSON.
+        const jsonStartMarker = "```json";
+        const jsonEndMarker = "```";
+
+        let startIndex = textToParse.indexOf(jsonStartMarker);
+
+        // Se encontrou o marcador ```json, extrai o conteúdo.
+        if (startIndex !== -1) {
+            startIndex += jsonStartMarker.length; // Pula o marcador inicial
+            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+            
+            if (endIndex > startIndex) {
+                textToParse = textToParse.slice(startIndex, endIndex).trim();
+            }
         }
+        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
+        // A lógica de JSON.parse() abaixo cuidará da validação.
 
         const parsedData: ParsedComposicao = JSON.parse(textToParse);
         
