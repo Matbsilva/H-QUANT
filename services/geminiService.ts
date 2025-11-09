@@ -850,7 +850,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
         - **Instruções de Correção do Usuário:** "${instruction}"
 
         **FORMATO DE SAÍDA OBRIGATÓRIO:**
-        Retorne APENAS o objeto JSON corrigido. Não adicione nenhum texto, explicação ou formatação markdown como \flexible```json \flexible``` antes ou depois do objeto JSON. Sua resposta deve ser diretamente parseável.
+        Retorne APENAS o objeto JSON corrigido. Não adicione nenhum texto, explicação ou formatação adicional antes ou depois do objeto JSON. Sua resposta deve ser diretamente parseável.
     `;
 
     try {
