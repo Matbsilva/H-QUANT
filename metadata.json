@@ -1,0 +1,7 @@
+{
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "name": "COMPOSIÇÕES PARA QUANTISA",
+  "description": "APLICATIVO PARA IMPORTAR E CRIAR BASE DE DADOS DAS COMPOSIÇÕES"
+}

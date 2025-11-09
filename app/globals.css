@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+    Define as cores de base para texto e fundo para toda a aplicação.
+    Isso garante alto contraste por padrão e corrige problemas onde a
+    cor do texto não se adaptava ao tema escuro.
+  */
+  body {
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-200;
+  }
+}
+
+@layer components {
+  /*
+    FIX: Solução Definitiva para o texto invisível na tabela Markdown.
+    As regras abaixo usam CSS puro para garantir alta especificidade,
+    sobrescrevendo os estilos conflitantes do plugin @tailwindcss/typography.
+    Isso força a cor correta do texto em todas as células da tabela (th, td),
+    resolvendo o bug de visibilidade nos temas claro e escuro.
+  */
+  .prose table th,
+  .prose table td {
+    color: #1e2937; /* Cor do texto para o tema claro (gray-800) */
+  }
+
+  .dark .prose table th,
+  .dark .prose table td {
+    color: #cbd5e1; /* Cor do texto para o tema escuro (gray-300) */
+  }
+}
+
+/* Barra de rolagem personalizada para modo escuro em navegadores Webkit, atualizada com as novas cores slate */
+.dark ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a; /* gray-900 */
+}
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155; /* gray-700 */
+  border-radius: 6px;
+  border: 3px solid #0f172a; /* gray-900 */
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #475569; /* gray-600 */
+}

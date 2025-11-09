@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quantisa - Cost Engineering AI</title>
+  <script>
+    // This script runs early to prevent a flash of unstyled content (FOUC) for dark mode users.
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4f46e5', // Indigo-600
+            success: '#10B981',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            neutral: '#64748B',
+            'light-bg': '#F8FAFC',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for dark mode in Webkit browsers from globals.css */
+    .dark ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: #1f2937; /* gray-800 */
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background-color: #4b5563; /* gray-600 */
+      border-radius: 6px;
+      border: 3px solid #1f2937; /* gray-800 */
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background-color: #6b7280; /* gray-500 */
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "next": "https://aistudiocdn.com/next@^16.0.0",
+    "tailwindcss": "https://aistudiocdn.com/tailwindcss@^4.1.16",
+    "@tailwindcss/typography": "https://aistudiocdn.com/@tailwindcss/typography@^0.5.19",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.1"
+  }
+}
+</script>
+  <script type="module" src="/index.tsx"></script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
