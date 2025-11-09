@@ -13,6 +13,9 @@ import type {
     ValueEngineeringAnalysis
 } from '../types';
 
+export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
+export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
+
 let ai: GoogleGenAI | null = null;
 
 // --- TIPOS DE RESPOSTA PARA O ASK H-QUANT ---
@@ -720,55 +723,41 @@ export const getRefinementSuggestions = async (
     }
 };
 
-export type ParsedComposicao = Omit<Composicao, 'id' | 'codigo'>;
 
 
-export const parseCompositions = async (text: string): Promise<Composicao[]> => {
-    if (!text || text.trim().length < 20) {
+
+export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
+    if (!text || text.trim().length < 50) { // Limite de 50 caracteres
         throw new Error("O texto fornecido é muito curto ou inválido para ser uma composição.");
     }
 
     const prompt = `
         **1.0 PERSONA E OBJETIVOS**
-        Você é um Engenheiro de Custos Sênior focado em extrair dados de textos não estruturados e convertê-los em um formato JSON preciso, seguindo um mapa de dados específico.
+        Você é um Engenheiro de Custos Sênior focado em extrair dados de textos e convertê-los em um formato JSON preciso.
 
         **2.0 TAREFA**
-        Sua tarefa é receber um texto de entrada e retornar um array de objetos JSON, com UM objeto por composição encontrada. Preencha apenas os campos que você conseguir extrair diretamente do texto. NÃO FAÇA CÁLCULOS.
+        Sua tarefa é receber um texto de entrada e retornar um array de objetos JSON, com UM objeto por composição. Preencha apenas os campos que você conseguir extrair diretamente do texto. **NÃO FAÇA CÁLCULOS**.
 
         **3.0 REGRAS**
-        - Foco em Extração, Não em Cálculo: Sua responsabilidade é IDENTIFICAR e EXTRAIR. Deixe campos calculáveis (como totais ou indicadores) como 0 ou null.
-        - Normalização de Nomes: Normalize o título para o formato: [Nome Base] ([Detalhe Principal]).
-        - Formato de Saída: Sua resposta DEVE estar encapsulada em um bloco de código Markdown JSON.
+        - Foco em Extração, Não em Cálculo: Sua responsabilidade é IDENTIFICAR e EXTRAIR. Deixe campos calculáveis (como totais ou indicadores) como 0, null, ou simplesmente não os inclua.
+        - Formato de Saída: Sua resposta DEVE estar encapsulada em um bloco de código Markdown JSON (ex: \`\`\`json ... \`\`\`).
 
         **4.0 ESTRUTURA DE DADOS ALVO (O "MAPA")**
-        Preencha apenas os campos que conseguir extrair do texto, seguindo esta estrutura:
-        \`\`\`typescript
-        export interface Composicao {
-          codigo: string;
-          titulo: string;
-          unidade: string;
-          quantidadeReferencia: number;
-          grupo: string;
-          subgrupo: string;
-          tags: string[];
-          premissas: { escopo: string; metodo: string; incluso: string; naoIncluso: string; };
-          insumos: { materiais: { item: string; unidade: string; quantidade: number; valorUnitario: number; }[]; equipamentos: any[]; };
-          maoDeObra: { funcao: string; hhPorUnidade: number; custoUnitario: number; }[];
-          analiseEngenheiro: { nota: string; fontesReferencias: string; quadroProdutividade: string; analiseRecomendacao: string; };
-        }
-        \`\`\`
-
-        **5.0 SAÍDA OBRIGATÓRIA**
-        Sua resposta final deve ser um array de objetos Composicao, DENTRO de um bloco de código Markdown JSON.
-        Exemplo:
+        Preencha apenas os campos que conseguir extrair do texto, seguindo esta estrutura simplificada:
         \`\`\`json
-        [
-          {
-            "codigo": "COMP-EX-01",
-            "titulo": "Exemplo de Título",
-            // ... outros campos extraídos
-          }
-        ]
+        {
+          "codigo": "string",
+          "titulo": "string",
+          "unidade": "string",
+          "quantidadeReferencia": "number",
+          "grupo": "string",
+          "subgrupo": "string",
+          "tags": ["string"],
+          "premissas": { "escopo": "string", "metodo": "string", "incluso": "string", "naoIncluso": "string" },
+          "insumos": { "materiais": [{ "item": "string", "unidade": "string", "quantidade": "number", "valorUnitario": "number" }], "equipamentos": [] },
+          "maoDeObra": [{ "funcao": "string", "hhPorUnidade": "number", "custoUnitario": "number" }],
+          "analiseEngenheiro": { "nota": "string", "fontesReferencias": "string", "quadroProdutividade": "string", "analiseRecomendacao": "string" }
+        }
         \`\`\`
     `;
 
@@ -792,9 +781,7 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
         // --- LÓGICA ROBUSTA DE EXTRAÇÃO DE JSON (SEM REGEX) ---
         const jsonStartMarker = "```json";
         const jsonEndMarker = "```";
-        
         let startIndex = textToParse.indexOf(jsonStartMarker);
-        
         if (startIndex !== -1) {
             startIndex += jsonStartMarker.length;
             const endIndex = textToParse.lastIndexOf(jsonEndMarker);
@@ -807,18 +794,16 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
         const parsedData = JSON.parse(textToParse);
 
         if (Array.isArray(parsedData)) {
-            return parsedData as Composicao[];
+            return parsedData as ParsedComposicao[];
         }
-
         if (typeof parsedData === 'object' && parsedData !== null) {
-            return [parsedData as Composicao];
+            return [parsedData as ParsedComposicao];
         }
-
         throw new Error("A IA não retornou um array ou objeto de composições válido.");
 
     } catch (error) {
         console.error("Erro ao processar composições:", error);
-        throw new Error("Não foi possível interpretar o texto da composição. Verifique o formato e tente novamente.");
+        throw new Error("Não foi possível interpretar o texto da composição. Verifique o formato, a resposta da IA e tente novamente.");
     }
 };
 

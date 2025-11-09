@@ -109,12 +109,12 @@ package.json: Adicionadas `vite` e `@vitejs/plugin-react` à seção `devDepende
 package-lock.json: Atualizado para refletir as novas dependências.
 Commit Associado: `fix(deps): add vite and plugin-react as devDependencies`
 
-[domingo, 9 de novembro de 2025] - FASE 0, TAREFA 7: Correção Definitiva de Sintaxe em `parseCompositions`
-Objetivo: Corrigir o erro de sintaxe persistente no Vercel, substituindo a função `parseCompositions` em `services/geminiService.ts` por uma versão validada que usa uma lógica de extração de JSON mais robusta (sem Regex).
-Análise e Arquitetura da Solução: As tentativas anteriores de corrigir a função `parseCompositions` com edições incrementais falharam, introduzindo novos erros de sintaxe. A decisão estratégica foi substituir a função inteira por um bloco de código limpo e funcional. A nova versão utiliza `indexOf` e `lastIndexOf` para encontrar o bloco de código JSON (` ```json...``` `) na resposta da IA, eliminando a fragilidade da Expressão Regular anterior e garantindo que o build não falhe mais por esse motivo.
+[domingo, 9 de novembro de 2025] - FASE 0, TAREPA 8: Correção Definitiva de Sintaxe em `parseCompositions` e Tipo `ParsedComposicao`
+Objetivo: Corrigir o erro de sintaxe persistente no Vercel, substituindo a função `parseCompositions` em `services/geminiService.ts` por uma versão validada que usa uma lógica de extração de JSON mais robusta (sem Regex) e garantir a definição correta do tipo `ParsedComposicao`.
+Análise e Arquitetura da Solução: As tentativas anteriores de corrigir a função `parseCompositions` com edições incrementais falharam, introduzindo novos erros de sintaxe. A decisão estratégica foi substituir a função inteira por um bloco de código limpo e funcional. A nova versão utiliza `indexOf` e `lastIndexOf` para encontrar o bloco de código JSON (` ```json...``` `) na resposta da IA, eliminando a fragilidade da Expressão Regular anterior e garantindo que o build não falhe mais por esse motivo. Além disso, a definição do tipo `ParsedComposicao` foi padronizada para `Partial<Omit<Composicao, 'id'>>` e a declaração duplicada foi removida.
 Modificações Realizadas:
-services/geminiService.ts: A função `parseCompositions` foi inteiramente substituída pela nova implementação com extração de JSON baseada em marcadores de string.
-Commit Associado: `fix(build): replace parseCompositions with robust JSON extraction`
+services/geminiService.ts: A função `parseCompositions` foi inteiramente substituída pela nova implementação com extração de JSON baseada em marcadores de string. A definição do tipo `ParsedComposicao` foi corrigida e duplicatas removidas.
+Commit Associado: `fix(build): replace parseCompositions with robust JSON extraction and fix ParsedComposicao type`
 
 ---
 ### **Resumo Executivo - Depuração do Deploy no Vercel (Projeto H-Quant)**
