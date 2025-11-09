@@ -76,7 +76,7 @@ export const analyzeText = async (prompt: string): Promise<string> => {
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -104,7 +104,7 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, imagePart] },
             config: {
                 responseMimeType: "application/json",
@@ -132,7 +132,7 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
 
     try {
         const response: GenerateContentResponse = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }],
@@ -241,7 +241,7 @@ type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnalitica | Na
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 systemInstruction,
@@ -295,13 +295,7 @@ Retorne um array de objetos JSON. Cada objeto deve seguir esta estrutura:
 }
 \`\`\`
 
-**TEXTO PARA ANÁLISE:**
-${text}
-    `;
-
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -390,7 +384,7 @@ ${JSON.stringify(existingInsumos)}
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -462,7 +456,7 @@ Retorne APENAS um objeto JSON com a seguinte estrutura:
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -521,7 +515,7 @@ export const processQueryResponses = async (
     `;
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -567,7 +561,7 @@ Retorne a lista completa de serviços, com as modificações aplicadas.
     `;
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -626,7 +620,7 @@ export const getValueEngineeringAnalysis = async (
 \`\`\`
 `;
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -679,7 +673,7 @@ export const getRefinementSuggestions = async (
 `;
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -856,7 +850,7 @@ Sua resposta final deve ser um array de objetos \`Composicao\` bem-formado, pron
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: fullPrompt,
             config: {
                 responseMimeType: "application/json",
@@ -916,7 +910,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
 
     try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             // FIX: Simplified 'contents' from [{ parts: [{ text: prompt }], role: 'user' }] to just prompt string for single-turn text.
             contents: prompt,
             config: {
@@ -1041,7 +1035,7 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
     
      try {
         const response = await aiInstance.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-2.5-flash',
             contents: fullPrompt,
             config: {
                 responseMimeType: "application/json",
