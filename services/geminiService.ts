@@ -307,7 +307,7 @@ Retorne um array de objetos JSON. Cada objeto deve seguir esta estrutura:
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+        const jsonRegex = /```json\\s*([\s\S]*?)\\s*```/;
         const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
@@ -396,7 +396,7 @@ ${JSON.stringify(existingInsumos)}
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+        const jsonRegex = /```json\\s*([\s\S]*?)\\s*```/;
         const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
@@ -923,7 +923,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+        const jsonRegex = /```json\\s*([\s\S]*?)\\s*```/;
         const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
