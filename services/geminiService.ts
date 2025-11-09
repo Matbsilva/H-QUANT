@@ -724,124 +724,25 @@ export type ParsedComposicao = Omit<Composicao, 'id' | 'codigo'>;
 
 
 export const parseCompositions = async (text: string): Promise<Composicao[]> => {
-    if (!text || text.trim().length < 50) {
-        // Validação de entrada básica
+    if (!text || text.trim().length < 20) {
         throw new Error("O texto fornecido é muito curto ou inválido para ser uma composição.");
     }
 
     const prompt = `
-        **1.0 PERSONA E OBJETIVOS ESTRATÉGICOS**
-        
-        Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que opera com uma Visão de Dono absoluta. Seu objetivo final é gerar inteligência de negócio para garantir propostas competitivas, maximizar a lucratividade e entregar valor e segurança ao cliente. Seus princípios de atuação são:
-        
-        *   Busca pelo Custo-Benefício Ótimo: Seu foco é ser competitivo. Você deve sempre buscar a solução mais econômica possível, desde que ela respeite integralmente as normas técnicas e as recomendações dos fabricantes.
-        *   Foco Obsessivo em Mitigação de Riscos: Sua primeira prioridade é identificar e neutralizar qualquer risco (técnico, executivo, logístico ou de escopo) antes que ele se materialize em prejuízo, retrabalho ou atraso.
-        *   Consultor, Não Calculista: Você atua como um consultor técnico, explicando o \"porquê\" de cada decisão, sinalizando riscos e guiando para a melhor solução.
-        
-        **2.0 TAREFA PRINCIPAL**
-        
-        Sua função é receber um texto de entrada e seu objetivo principal é sempre retornar um array de objetos JSON perfeitamente estruturados no formato Composicao final definido na Seção 4.0.
-        
-        **3.0 REGRAS DE ADAPTAÇÃO E PARSING (REVISADAS E REFORÇADAS)**
-        
-        *   **3.1. Regra de Validação de Entrada (PRIORIDADE MÁXIMA):**
-            *   Primeiro, analise o texto de entrada. Se o texto for manifestamente inválido (curto, aleatório, sem nenhuma palavra-chave como \"custo\", \"material\", \"serviço\", \"m²\", etc.), sua tarefa é parar imediatamente. Neste caso, gere uma notaDaImportacao com a mensagem de erro: \'Alerta: O texto fornecido não parece ser uma composição de serviço. Não foi possível extrair dados. Por favor, verifique o texto e tente novamente.\' e retorne um objeto Composicao com campos vazios ou nulos. NÃO tente criar uma composição a partir de um texto sem sentido.
-        
-        *   **3..2. Lógica de Processamento e Extração Completa:**
-            *   Se a entrada for válida, prossiga. É mandatório que você tente extrair todas as 7 seções do padrão, se presentes.
-            *   Se o texto de entrada já estiver no formato \"Composição Padrão Quantisa\", faça o parsing direto.
-            *   Se o texto estiver em um formato desconhecido, ative seu modo de adaptação inteligente.
-        
-        *   **3.3. Transparência e Sugestão de Código (Regras Obrigatórias):**
-            *   **Seja Conciso na notaDaImportacao:** Foque em resumir as principais adaptações e nos alertas de maior risco.
-            *   **Sugira o Código (OBRIGATÓRIO):** Analise o título e os insumos e, na notaDaImportacao, sugira um Grupo e um Subgrupo.
-            *   **Preencha os Campos de Grupo/Subgrupo:** Os valores que você sugerir para Grupo e Subgrupo devem também ser usados para preencher os campos grupo e subgrupo no objeto Composicao principal.
-        
-        *   **3.4. Formatação de Saída (REGRAS ESPECÍFICAS COM EXEMPLOS):**
-            *   **Fontes e Referências (Seção 7.2):** Ao gerar o texto para o campo analiseEngenheiro.fontesReferencias, formate-o obrigatoriamente com quebras de linha (duplo \\n para criar um novo parágrafo) e negrito (**) em Markdown. O título de cada coeficiente deve estar em uma nova linha. Siga os exemplos abaixo rigorosamente:
-                *   **Exemplo 1 (Contrapiso):**
-                    \`\`\`markdown
-                    **Coeficientes de Consumo:** Traço de argamassa baseado em tabelas de referência (TCPO). Consumo de aditivo baseado em ficha técnica (Vedacit).
-        
-                    **Coeficientes de Produtividade:** Índice de 1,20 HH/m² mantido da composição original, considerado adequado por envolver duas etapas distintas.
-                    \`\`\`
-                *   **Exemplo 2 (Alvenaria):**
-                    \`\`\`markdown
-                    **Coeficientes de Consumo:** Consumo de blocos conforme padrão de mercado (12,5 un/m²). Traços de argamassa e concreto baseados em TCPO.
-        
-                    **Coeficientes de Produtividade:** Índice de 1,40 HH/m² mantido, considerado conservador e adequado à complexidade e ao risco do trabalho em altura.
-                    \`\`\`
-        
-            *   **Quadro de Produtividade (Seção 7.3):** Para o campo \`analiseEngenheiro.quadroProdutividade\`, formate **SEMPRE** a saída como uma tabela Markdown simples e válida.
-                *   **REGRAS OBRIGATÓRIAS PARA A TABELA:**
-                    1.  **CONTEÚDO MÍNIMO:** A tabela DEVE conter, no mínimo, **duas (2) linhas de dados**: a primeira linha para o \`**Índice Adotado**\` e a segunda (e subsequentes) para **pelo menos uma referência de mercado** (ex: SINAPI, TCPO, ou outra fonte pertinente).
-                    2.  **COMPARAÇÃO É ESSENCIAL:** O objetivo principal deste quadro é a **comparação**. Se você não encontrar uma referência direta, use uma referência de um serviço similar e justifique na \`nota\` da Análise do Engenheiro.
-                    3.  **PROIBIÇÃO:** **NÃO GERE UMA TABELA COM APENAS UMA LINHA DE DADOS.** Isso é considerado uma falha crítica.
-                    4.  **FORMATAÇÃO:** Siga os exemplos abaixo **rigorosamente**. NUNCA retorne este campo como texto contínuo ou \`[Object Object]\`.
+        **1.0 PERSONA E OBJETIVOS**
+        Você é um Engenheiro de Custos Sênior focado em extrair dados de textos não estruturados e convertê-los em um formato JSON preciso, seguindo um mapa de dados específico.
 
-                *   **EXEMPLOS (SEGUIR ESTRUTURA):**
-                    *   Exemplo 1 (Alvenaria):
-                        \`\`\`markdown
-                        | Fonte de Referência | Produtividade (HH/m²) | Custo M.O. (R$/m²) | Variação vs. Adotado |
-                        | :--- | :--- | :--- | :--- |
-                        | **Índice Adotado (Total)** | **1,40** | **R$ 43,75** | **-** |
-                        | SINAPI (Cód. 87282) | 0,71 | R$ 22,19 | -49,29% |
-                        \`\`\`
-                    *   Exemplo 2 (Impermeabilização):
-                        \`\`\`markdown
-                        | Fonte de Referência | Produtividade (HH/m²) | Custo M.O. (R$/m²) | Variação vs. Adotado |
-                        | :--- | :--- | :--- | :--- |
-                        | **Índice Adotado (Profis.+Ajud.)** | **0,87** | **R$ 27,45** | **-** |
-                        | TCPO (Ref. 04.30.20.15) | 0,75 | R$ 23,44 | -14,62% |
-                        \`\`\`
-        
-        **4.0 ESTRUTURA DE DADOS ALVO (JSON de Saída)**
-        
-        Sua saída deve aderir estritamente à seguinte estrutura TypeScript. Sempre retorne um array \`[]\`, mesmo que ele contenha apenas um único objeto.
-        
+        **2.0 TAREFA**
+        Sua tarefa é receber um texto de entrada e retornar um array de objetos JSON, com UM objeto por composição encontrada. Preencha apenas os campos que você conseguir extrair diretamente do texto. NÃO FAÇA CÁLCULOS.
+
+        **3.0 REGRAS**
+        - Foco em Extração, Não em Cálculo: Sua responsabilidade é IDENTIFICAR e EXTRAIR. Deixe campos calculáveis (como totais ou indicadores) como 0 ou null.
+        - Normalização de Nomes: Normalize o título para o formato: [Nome Base] ([Detalhe Principal]).
+        - Formato de Saída: Sua resposta DEVE estar encapsulada em um bloco de código Markdown JSON.
+
+        **4.0 ESTRUTURA DE DADOS ALVO (O "MAPA")**
+        Preencha apenas os campos que conseguir extrair do texto, seguindo esta estrutura:
         \`\`\`typescript
-        export interface ComposicaoInsumo {
-          item: string;
-          unidade: string;
-          quantidade: number;
-          valorUnitario: number;
-          valorTotal: number;
-          pesoUnitario?: number;
-          pesoTotal?: number;
-        }
-        export interface ComposicaoMaoDeObra {
-          funcao: string;
-          hhPorUnidade: number;
-          custoUnitario: number;
-          custoTotal: number;
-        }
-        export interface ComposicaoListaCompraItem {
-            item: string;
-            unidadeCompra: string;
-            quantidadeBruta: number;
-            quantidadeAComprar: number;
-            custoTotalEstimado: number;
-        }
-        export interface ComposicaoIndicadorMaoDeObra {
-            funcao: string;
-            hhPorUnidade: number;
-            hhTotal: number;
-        }
-        export interface ComposicaoIndicadores {
-          custoMateriais_porUnidade: number;
-          custoEquipamentos_porUnidade: number;
-          custoMaoDeObra_porUnidade: number;
-          custoDiretoTotal_porUnidade: number;
-          custoMateriais_total: number;
-          custoEquipamentos_total: number;
-          custoMaoDeObra_total: number;
-          custoDiretoTotal_total: number;
-          maoDeObraDetalhada: ComposicaoIndicadorMaoDeObra[];
-          pesoMateriais_porUnidade: number;
-          pesoMateriais_total: number;
-          volumeEntulho_porUnidade: number;
-          volumeEntulho_total: number;
-        }
         export interface Composicao {
           codigo: string;
           titulo: string;
@@ -850,36 +751,22 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
           grupo: string;
           subgrupo: string;
           tags: string[];
-          classificacaoInterna: string;
           premissas: { escopo: string; metodo: string; incluso: string; naoIncluso: string; };
-          insumos: { materiais: ComposicaoInsumo[]; equipamentos: ComposicaoInsumo[]; };
-          maoDeObra: ComposicaoMaoDeObra[];
-          quantitativosConsolidados: {
-              listaCompraMateriais: ComposicaoListaCompraItem[];
-              necessidadeEquipamentos: any[];
-              quadroMaoDeObraTotal: any[];
-          };
-          indicadores: ComposicaoIndicadores;
-          guias: { dicasExecucao: string; alertasSeguranca: string; criteriosQualidade: string; };
-          analiseEngenheiro: {
-            nota: string;
-            fontesReferencias: string;
-            quadroProdutividade: string;
-            analiseRecomendacao: string;
-            notaDaImportacao?: string;
-          };
+          insumos: { materiais: { item: string; unidade: string; quantidade: number; valorUnitario: number; }[]; equipamentos: any[]; };
+          maoDeObra: { funcao: string; hhPorUnidade: number; custoUnitario: number; }[];
+          analiseEngenheiro: { nota: string; fontesReferencias: string; quadroProdutividade: string; analiseRecomendacao: string; };
         }
         \`\`\`
-        
-        **5.0 SAÍDA**
-        Sua resposta final deve ser um array de objetos Composicao bem-formado, DENTRO de um bloco de código Markdown JSON.
+
+        **5.0 SAÍDA OBRIGATÓRIA**
+        Sua resposta final deve ser um array de objetos Composicao, DENTRO de um bloco de código Markdown JSON.
         Exemplo:
         \`\`\`json
         [
           {
-            \"codigo\": \"...\",
-            \"titulo\": \"...\",
-            ...
+            "codigo": "COMP-EX-01",
+            "titulo": "Exemplo de Título",
+            // ... outros campos extraídos
           }
         ]
         \`\`\`
@@ -889,7 +776,7 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
 
     try {
         const aiInstance = getAiInstance();
-        if (!aiInstance) throw new Error("IA não configurada");
+        if (!aiInstance) throw new Error("IA não configurada.");
 
         const result = await aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" }).generateContent(fullPrompt);
         const response = result.response;
@@ -909,17 +796,13 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
         let startIndex = textToParse.indexOf(jsonStartMarker);
         
         if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length; // Pula o marcador inicial
+            startIndex += jsonStartMarker.length;
             const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            
             if (endIndex > startIndex) {
                 textToParse = textToParse.slice(startIndex, endIndex).trim();
             }
         }
-        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
-        // A lógica de JSON.parse() abaixo cuidará da validação.
-
-        // ---------------------------------------------------------
+        // --- FIM DA LÓGICA DE EXTRAÇÃO ---
 
         const parsedData = JSON.parse(textToParse);
 
@@ -935,7 +818,7 @@ export const parseCompositions = async (text: string): Promise<Composicao[]> => 
 
     } catch (error) {
         console.error("Erro ao processar composições:", error);
-        throw new Error("Não foi possível interpretar o texto da composição. Verifique o formato, a resposta da IA e tente novamente.");
+        throw new Error("Não foi possível interpretar o texto da composição. Verifique o formato e tente novamente.");
     }
 };
 
