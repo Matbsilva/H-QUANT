@@ -77,6 +77,11 @@ export const analyzeText = async (prompt: string): Promise<string> => {
     try {
         const response = await aiInstance.models.generateContent({
             model: 'gemini-1.5-flash-latest',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+            }
+        });
         const text = response.text;
         if (typeof text === 'string') {
             return text;
@@ -302,7 +307,8 @@ ${text}
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;        const match = textToParse.match(jsonRegex);
+        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+        const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
         }
@@ -456,7 +462,13 @@ Retorne APENAS um objeto JSON com a seguinte estrutura:
                 responseMimeType: "application/json",
             }
         });
-        return JSON.parse(response.text);
+        const text = response.text;
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao detalhar escopo:", error);
         throw new Error("A IA falhou ao gerar o escopo detalhado.");
@@ -607,7 +619,6 @@ export const getValueEngineeringAnalysis = async (
 }
 \`\`\`
 `;
-    try {
         const response = await aiInstance.models.generateContent({
             model: 'gemini-1.5-flash-latest',
             contents: prompt,
@@ -622,10 +633,6 @@ export const getValueEngineeringAnalysis = async (
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-    } catch (error) {
-        console.error("Erro ao gerar análise de engenharia de valor:", error);
-        throw new Error("A IA falhou ao gerar a análise de engenharia de valor.");
-    }
 };
 
 // FIX: Implemented getRefinementSuggestions function
@@ -916,7 +923,8 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;        const match = textToParse.match(jsonRegex);
+        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+        const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
         }
