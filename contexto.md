@@ -96,3 +96,9 @@ Análise e Arquitetura da Solução: O erro foi introduzido na tentativa anterio
 Modificações Realizadas:
 services/geminiService.ts: Corrigida a sintaxe em múltiplas funções (`analyzeText`, `processQueryResponses`, `refineScopeFromEdits`, `getValueEngineeringAnalysis`, `getRefinementSuggestions`, `parseInsumos`, `reviseParsedComposition`) movendo a declaração da variável `text` ou `textToParse` para fora e para depois da chamada `generateContent`.
 Commit Associado: `fix(geminiService): correct syntax error in generateContent calls`
+[sábado, 8 de novembro de 2025] - FASE 0, TAREFA 5: Correção de Type Error em services/geminiService.ts (generateWithSearch)
+Objetivo: Corrigir o `TypeError` recorrente, desta vez na função `generateWithSearch`, garantindo que a propriedade `response.text` seja validada antes do uso.
+Análise e Arquitetura da Solução: Uma auditoria completa do arquivo revelou que a função `generateWithSearch` ainda atribuía `response.text` diretamente a um objeto, sem a verificação de segurança necessária. O padrão de validação (`if (typeof text === 'string')`) foi aplicado a esta função para garantir que o código só prossiga se a resposta da API for uma string válida. Caso contrário, um erro informativo é lançado. Esta ação completa a auditoria de segurança de tipo para todas as chamadas à API Gemini no arquivo.
+Modificações Realizadas:
+services/geminiService.ts: Implementado o padrão de verificação de tipo para `response.text` dentro da função `generateWithSearch`.
+Commit Associado: `fix(geminiService): add comprehensive type safety for response.text`

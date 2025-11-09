@@ -139,12 +139,18 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
             },
         });
 
-        const searchResult: SearchResult = {
-            text: response.text,
-            metadata: response.candidates?.[0]?.groundingMetadata,
-        };
+        const text = response.text;
 
-        return searchResult;
+        if (typeof text === 'string') {
+            const searchResult: SearchResult = {
+                text: text,
+                metadata: response.candidates?.[0]?.groundingMetadata,
+            };
+            return searchResult;
+        } else {
+            console.error("Resposta da IA inválida ou sem texto para busca:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia durante a busca.");
+        }
     } catch (error) {
         console.error("Erro ao gerar resposta com busca:", error);
         return { text: "Ocorreu um erro ao buscar a resposta. Tente novamente." };
