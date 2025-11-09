@@ -102,3 +102,10 @@ Análise e Arquitetura da Solução: Uma auditoria completa do arquivo revelou q
 Modificações Realizadas:
 services/geminiService.ts: Implementado o padrão de verificação de tipo para `response.text` dentro da função `generateWithSearch`.
 Commit Associado: `fix(geminiService): add comprehensive type safety for response.text`
+[sábado, 8 de novembro de 2025] - FASE 0, TAREFA 6: Adição de Dependências do Vite
+Objetivo: Resolver o erro "Cannot find module 'vite'" no Vercel, adicionando `vite` e `@vitejs/plugin-react` como dependências de desenvolvimento no `package.json`.
+Análise e Arquitetura da Solução: O erro de módulo não encontrado indicava que as ferramentas de build do Vite, embora usadas no projeto, não estavam declaradas como dependências. A solução foi instalá-las como `devDependencies` usando `npm install --save-dev vite @vitejs/plugin-react`. Isso garante que o ambiente de build do Vercel tenha acesso a esses pacotes durante a compilação.
+Modificações Realizadas:
+package.json: Adicionadas `vite` e `@vitejs/plugin-react` à seção `devDependencies`.
+package-lock.json: Atualizado para refletir as novas dependências.
+Commit Associado: `fix(deps): add vite and plugin-react as devDependencies`
