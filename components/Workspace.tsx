@@ -117,7 +117,7 @@ const Quadrant = ({ title, children, className, actions }: { title: string, chil
 
 const RenderMarkdownBold = ({ text }: { text: string }) => {
     // Looks for a title in the format **Title:** at the beginning of the string
-    const match = text.match(/^\*\*(.*?)\*\*(.*)/s); // s flag for dot to match newline
+    const match = text.match(/^\*\*(.*?)\*\*([\s\S]*)/);
     if (match) {
         const title = match[1];
         const description = match[2];
