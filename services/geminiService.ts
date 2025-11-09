@@ -77,12 +77,13 @@ export const analyzeText = async (prompt: string): Promise<string> => {
     try {
         const response = await aiInstance.models.generateContent({
             model: 'gemini-1.5-flash-latest',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        return response.text;
+        const text = response.text;
+        if (typeof text === 'string') {
+            return text;
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao analisar texto:", error);
         throw new Error("A IA falhou ao analisar o texto.");
@@ -104,7 +105,13 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
                 responseMimeType: "application/json",
             }
         });
-        return response.text;
+        const text = response.text;
+        if (typeof text === 'string') {
+            return text;
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao analisar imagem:", error);
         throw new Error("A IA falhou ao analisar a imagem.");
@@ -231,8 +238,14 @@ type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnalitica | Na
             }
         });
         // Remove potential markdown fences for cleaner parsing
-        const cleanedText = response.text.replace(/```json\n?|\n?```/g, '');
-        return cleanedText;
+        const text = response.text;
+        if (typeof text === 'string') {
+            const cleanedText = text.replace(/```json\n?|\n?```/g, '');
+            return cleanedText;
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao buscar nas composições:", error);
         throw new Error("A IA falhou ao buscar na base de dados de composições.");
@@ -285,8 +298,11 @@ ${text}
         });
         
         let textToParse = response.text;
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-        const match = textToParse.match(jsonRegex);
+        if (typeof textToParse !== 'string') {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
+        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;        const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
         }
@@ -370,6 +386,10 @@ ${JSON.stringify(existingInsumos)}
         });
 
         let textToParse = response.text;
+        if (typeof textToParse !== 'string') {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
         const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
         const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
@@ -489,7 +509,13 @@ export const processQueryResponses = async (
                 responseMimeType: "application/json",
             }
         });
-        return JSON.parse(response.text);
+        const text = response.text;
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao processar respostas de consulta:", error);
         throw new Error("A IA falhou ao processar as respostas.");
@@ -529,7 +555,13 @@ Retorne a lista completa de serviços, com as modificações aplicadas.
                 responseMimeType: "application/json",
             }
         });
-        return JSON.parse(response.text);
+        const text = response.text;
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao refinar escopo com edições:", error);
         throw new Error("A IA falhou ao refinar o escopo.");
@@ -583,7 +615,13 @@ export const getValueEngineeringAnalysis = async (
                 responseMimeType: "application/json",
             }
         });
-        return JSON.parse(response.text);
+        const text = response.text;
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao gerar análise de engenharia de valor:", error);
         throw new Error("A IA falhou ao gerar a análise de engenharia de valor.");
@@ -634,7 +672,13 @@ export const getRefinementSuggestions = async (
                 responseMimeType: "application/json",
             }
         });
-        return JSON.parse(response.text);
+        const text = response.text;
+        if (typeof text === 'string') {
+            return JSON.parse(text);
+        } else {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
     } catch (error) {
         console.error("Erro ao gerar sugestões de refinamento:", error);
         throw new Error("A IA falhou ao gerar as sugestões de refinamento.");
@@ -807,6 +851,10 @@ Sua resposta final deve ser um array de objetos \`Composicao\` bem-formado, pron
         });
         
         let textToParse = response.text;
+        if (typeof textToParse !== 'string') {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
         
         const parsedData = JSON.parse(textToParse);
         
@@ -864,8 +912,11 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
         });
 
         let textToParse = response.text;
-        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-        const match = textToParse.match(jsonRegex);
+        if (typeof textToParse !== 'string') {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
+        const jsonRegex = /```json\s*([\s\S]*?)\s*```/;        const match = textToParse.match(jsonRegex);
         if (match && match[1]) {
             textToParse = match[1];
         }
@@ -984,6 +1035,10 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
         });
 
         const textToParse = response.text;
+        if (typeof textToParse !== 'string') {
+            console.error("Resposta da IA inválida ou sem texto:", response);
+            throw new Error("A IA retornou uma resposta inválida ou vazia.");
+        }
         const parsedData = JSON.parse(textToParse);
 
         if (parsedData && Array.isArray(parsedData.resultados)) {
