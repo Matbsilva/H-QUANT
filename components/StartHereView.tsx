@@ -99,7 +99,7 @@ export const StartHereView = ({ composicoes, showToast }: { composicoes: Composi
 
         try {
             const resultText = await answerQueryFromCompositions(currentInput, composicoes);
-            const parsedResponse = JSON.parse(resultText) as GeminiResponse;
+            const parsedResponse = await answerQueryFromCompositions(currentInput, composicoes);
             
             const modelMessage: ChatMessage = { 
                 id: thinkingMessage.id, 
