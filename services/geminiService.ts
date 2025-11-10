@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { 
     Composicao, 
     SearchResult,
@@ -14,7 +14,7 @@ import type {
 // Definição única e correta para o resultado do parsing
 export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
 
-let ai: GoogleGenAI | null = null;
+let ai: GoogleGenerativeAI | null = null;
 
 // --- TIPOS DE RESPOSTA PARA O ASK H-QUANT ---
 export type RespostaDireta = {
@@ -39,7 +39,7 @@ export type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnaliti
 
 
 /**
- * Lazily initializes and returns the GoogleGenAI instance.
+ * Lazily initializes and returns the GoogleGenerativeAI instance.
  * This function ensures the SDK is only instantiated on the client-side when needed.
  */
 function getAiInstance() {
@@ -48,7 +48,7 @@ function getAiInstance() {
     }
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (apiKey) {
-        ai = new GoogleGenAI({ apiKey });
+        ai = new GoogleGenerativeAI(apiKey);
         return ai;
     }
     console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
@@ -74,7 +74,7 @@ export const analyzeText = async (prompt: string): Promise<string> => {
     if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
     try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(prompt);
         const response = result.response;
         const text = response.text();
@@ -97,8 +97,8 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
     const imagePart = await fileToGenerativePart(image);
 
     try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent({ parts: [{ text: prompt }, imagePart] });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContent([{ text: prompt }, imagePart]);
         const response = result.response;
         const text = response.text();
         if (typeof text === 'string') {
@@ -121,8 +121,7 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
 
     try {
         const model = aiInstance.getGenerativeModel({ 
-            model: 'gemini-2.5-flash', 
-            tools: [{ googleSearch: {} }] 
+            model: 'gemini-1.5-flash'
         });
         const result = await model.generateContent(prompt);
         const response = result.response;
@@ -196,7 +195,7 @@ type NaoEncontrado = { tipoResposta: "nao_encontrado"; texto: string; };
 
     try {
         const model = aiInstance.getGenerativeModel({ 
-            model: 'gemini-2.5-flash', 
+            model: 'gemini-1.5-flash',
             systemInstruction: systemInstruction 
         });
         const result = await model.generateContent(prompt);
@@ -217,7 +216,7 @@ type NaoEncontrado = { tipoResposta: "nao_encontrado"; texto: string; };
 };
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions CORRIGIDA E ROBUSTA (MANTIDA COM SINTAXE DE UMA ETAPA)
+// FUNÇÃO parseCompositions CORRIGIDA E ROBUSTA
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -261,10 +260,8 @@ export const parseCompositions = async (text: string): Promise<ParsedComposicao[
         const aiInstance = getAiInstance();
         if (!aiInstance) throw new Error("IA não configurada.");
 
-        const result = await aiInstance.generateContent({
-            model: "gemini-2.5-flash",
-            contents: fullPrompt
-        });
+        const model = aiInstance.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(fullPrompt);
         const response = result.response;
         const responseText = response.text();
 
@@ -322,7 +319,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
     `;
 
     try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(prompt);
         const response = result.response;
         let textToParse = response.text();
@@ -436,7 +433,7 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
     const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
     
      try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(fullPrompt);
         const response = result.response;
         const textToParse = response.text();
