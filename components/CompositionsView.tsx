@@ -106,7 +106,7 @@ export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCo
                         const label = key.replace(/_/g, ' ').replace(/porUnidade|total/, '').replace(/\b\w/g, l => l.toUpperCase());
                         if (key.endsWith('_porUnidade')) {
                              const totalKey = key.replace('_porUnidade', '_total') as keyof typeof composition.indicadores;
-                             const totalValue = composition.indicadores[totalKey];
+                             const totalValue = composition.indicadores?.[totalKey];
                             return (
                                 <tr key={key}><td className="px-4 py-1 font-semibold">{label}</td><td className="px-4 py-1">{typeof value === 'number' ? 'R$' : ''}</td><td className="px-4 py-1 font-mono">{typeof value === 'number' ? value.toFixed(2) : ''}</td><td className="px-4 py-1 font-mono">{typeof totalValue === 'number' ? totalValue.toFixed(2) : ''}</td></tr>
                             )
@@ -257,7 +257,7 @@ const CompositionDetailDisplay: React.FC<{
                         const label = key.replace(/_/g, ' ').replace(/porUnidade|total/, '').replace(/\b\w/g, l => l.toUpperCase());
                         if (key.endsWith('_porUnidade')) {
                              const totalKey = key.replace('_porUnidade', '_total') as keyof typeof composition.indicadores;
-                             const totalValue = composition.indicadores[totalKey];
+                             const totalValue = composition.indicadores?.[totalKey];
                             return (
                                 <tr key={key}><td className="px-4 py-1 font-semibold">{label}</td><td className="px-4 py-1">{typeof value === 'number' ? 'R$' : ''}</td><td className="px-4 py-1 font-mono">{typeof value === 'number' ? value.toFixed(2) : ''}</td><td className="px-4 py-1 font-mono">{typeof totalValue === 'number' ? totalValue.toFixed(2) : ''}</td></tr>
                             )
