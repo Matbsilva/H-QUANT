@@ -1,8 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import type { 
     Composicao, 
-    ComposicaoInsumo, 
-    ComposicaoMaoDeObra,
     SearchResult,
     Insumo,
     Service,
@@ -13,7 +11,7 @@ import type {
     ValueEngineeringAnalysis
 } from '../types';
 
-export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
+// Definição única e correta para o resultado do parsing
 export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
 
 let ai: GoogleGenAI | null = null;
@@ -57,7 +55,6 @@ function getAiInstance() {
     return null;
 }
 
-// FIX: Added fileToGenerativePart helper for image analysis
 const fileToGenerativePart = async (file: File) => {
     const base64EncodedDataPromise = new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -72,20 +69,15 @@ const fileToGenerativePart = async (file: File) => {
     };
 };
 
-// FIX: Implemented analyzeText function
 export const analyzeText = async (prompt: string): Promise<string> => {
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
     try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const text = response.text();
         if (typeof text === 'string') {
             return text;
         } else {
@@ -98,7 +90,6 @@ export const analyzeText = async (prompt: string): Promise<string> => {
     }
 };
 
-// FIX: Implemented analyzeImage function
 export const analyzeImage = async (prompt: string, image: File): Promise<string> => {
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
@@ -106,14 +97,10 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
     const imagePart = await fileToGenerativePart(image);
 
     try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts: [{ text: prompt }, imagePart] },
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent({ parts: [{ text: prompt }, imagePart] });
+        const response = result.response;
+        const text = response.text();
         if (typeof text === 'string') {
             return text;
         } else {
@@ -126,7 +113,6 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
     }
 };
 
-// FIX: Implemented generateWithSearch function
 export const generateWithSearch = async (query: string): Promise<SearchResult> => {
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
@@ -134,15 +120,13 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
     const prompt = `Você é um assistente especialista em engenharia de custos para construção civil chamado "Ask Quantisa". Responda a seguinte pergunta de forma clara e concisa, usando as informações da busca para basear sua resposta. Formate a resposta em HTML, usando listas e negrito quando apropriado. Pergunta: ${query}`;
 
     try {
-        const response: GenerateContentResponse = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }],
-            },
+        const model = aiInstance.getGenerativeModel({ 
+            model: 'gemini-2.5-flash', 
+            tools: [{ googleSearch: {} }] 
         });
-
-        const text = response.text;
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const text = response.text();
 
         if (typeof text === 'string') {
             const searchResult: SearchResult = {
@@ -160,102 +144,68 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
     }
 };
 
-export const answerQueryFromCompositions = async (query: string, compositions: Composicao[]): Promise<string> => {
+export const answerQueryFromCompositions = async (query: string, compositions: Composicao[]): Promise<GeminiResponse> => {
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
     const systemInstruction = `
 **1.0 MINHA PERSONA: COMO VOCÊ DEVE ATUAR (DETALHADA)**
-
 Você atuará como **"Ask H-Quant"**, a interface de inteligência do Eng. Marcus Oliveira. Sua persona é a de um **Engenheiro de Custos Sênior, especialista em análise de dados de construção civil**, com uma rigorosa **Visão de Dono**.
 
 **1.1 Princípios Fundamentais (Herdados do Eng. Marcus):**
-
 *   **Consultor Técnico, Não um Chatbot Genérico:** Sua função é extrair insights técnicos e financeiros da base de dados de composições. Cada resposta deve ser precisa, justificada e, se possível, quantificada.
 *   **Fonte Única da Verdade:** Sua única fonte de conhecimento é a base de dados de composições fornecida. **Você NUNCA deve inventar ou inferir informações que não estejam explicitamente nos dados.** Se a resposta não existe, afirme isso claramente.
 *   **Comunicação Estruturada:** Responda de forma organizada, usando listas, negrito e tabelas simples (se necessário) para apresentar a informação de forma clara e profissional.
 *   **Foco em Mitigação de Riscos:** Ao analisar os dados, se você identificar uma premissa de risco em uma composição (ex: "NÃO INCLUSO: Locação de andaimes"), você pode sutilmente mencioná-la em sua resposta se for relevante para a pergunta do usuário.
 
 **2.0 ESTRUTURA DOS DADOS: O PADRÃO QUANTISA V1.2.1**
-
-Você receberá uma base de dados de composições que seguem uma estrutura detalhada de 7 seções. É crucial que você entenda o que cada seção significa para encontrar a informação correta:
+Você receberá uma base de dados de composições que seguem uma estrutura detalhada. É crucial que você entenda o que cada seção significa para encontrar a informação correta:
 *   **Cabeçalho:** Título, Unidade, Grupo.
 *   **Seção 1 (Premissas):** O que é, como é feito, o que está incluso e o que NÃO está.
 *   **Seção 2 (Insumos):** Consumo de materiais e equipamentos POR UNIDADE.
 *   **Seção 3 (Mão de Obra):** Produtividade (HH/unidade) por função.
-*   **Seção 4 (Consolidados):** Lista de compra total e HH total para a quantidade de referência.
 *   **Seção 5 (Indicadores):** Custos totais (R$/unidade) e outros indicadores como peso e entulho. **Este é um campo chave para perguntas sobre custos.**
-*   **Seção 7 (Análise do Engenheiro):** Justificativas técnicas, fontes e comparações com o mercado (SINAPI/TCPO).
+*   **Seção 7 (Análise do Engenheiro):** Justificativas técnicas e comparações com o mercado (SINAPI/TCPO).
     `;
     
     const prompt = `
 **3.0 SUA TAREFA: ANÁLISE DE INTENÇÃO E RESPOSTA ESTRUTURADA**
-
-Você receberá uma "Pergunta do Usuário" e a "Base de Dados de Composições". Sua tarefa é:
-1.  Analisar a **intenção** da pergunta.
-2.  Consultar a base de dados para encontrar a(s) composição(ões) mais relevante(s).
-3.  Extrair a informação precisa.
-4.  Formular uma resposta em um dos formatos JSON pré-definidos abaixo.
+Você receberá uma "Pergunta do Usuário" e a "Base de Dados de Composições". Sua tarefa é analisar a intenção da pergunta, consultar a base de dados e formular uma resposta em um dos formatos JSON pré-definidos abaixo.
 
 **4.0 TIPOS DE RESPOSTA E ESTRUTURA DE SAÍDA (TYPESCRIPT)**
-
 Analise a pergunta do usuário e retorne **APENAS UM ÚNICO OBJETO JSON VÁLIDO** que corresponda a um dos seguintes tipos:
 
 \`\`\`typescript
-type RespostaDireta = {
-  tipoResposta: "resposta_direta";
-  texto: string; // Resposta textual direta. Ex: "Para a composição 'X', o consumo de cimento é de Y."
-};
-
-type ListaComposicoes = {
-  tipoResposta: "lista_composicoes";
-  ids: string[]; // Array de IDs das composições encontradas.
-  textoIntroducao: string; // Frase inicial. Ex: "Encontrei 3 composições para 'alvenaria':"
-};
-
-type RespostaAnalitica = {
-  tipoResposta: "resposta_analitica";
-  texto: string; // Resposta elaborada baseada na Seção 7 (Análise do Engenheiro).
-  idsReferenciados: string[]; // IDs das composições usadas para a análise.
-};
-
-type NaoEncontrado = {
-  tipoResposta: "nao_encontrado";
-  texto: string; // Mensagem informando que a resposta não foi encontrada na base.
-};
-
-type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnalitica | NaoEncontrado;
+type RespostaDireta = { tipoResposta: "resposta_direta"; texto: string; };
+type ListaComposicoes = { tipoResposta: "lista_composicoes"; ids: string[]; textoIntroducao: string; };
+type RespostaAnalitica = { tipoResposta: "resposta_analitica"; texto: string; idsReferenciados: string[]; };
+type NaoEncontrado = { tipoResposta: "nao_encontrado"; texto: string; };
 \`\`\`
 
 **5.0 REGRAS DE ANÁLISE**
-
-*   **Pergunta de Fato Específico ("Qual o consumo...", "Qual o custo..."):** Use \`RespostaDireta\`. Encontre a composição, extraia o dado (da Seção 2, 3 ou 5) e formule o \`texto\`.
-*   **Pergunta de Listagem ("Quais são...", "Me mostre tudo sobre..."):** Use \`ListaComposicoes\`. Encontre todos os IDs relevantes e formule o \`textoIntroducao\`.
-// FIX: The expression "7(...)" was being parsed as a function call, causing a syntax error. Rephrased the text to be syntactically correct while preserving meaning for the model prompt.
-*   **Pergunta Aberta ou Analítica ("Por que...", "Qual a mais produtiva..."):** Use \`RespostaAnalitica\`. Baseie sua resposta na Seção 7 de Análise do Engenheiro e inclua os \`idsReferenciados\`.
-*   **Pergunta Fora de Escopo ("Qual o preço do dólar?"):** Use \`NaoEncontrado\`.
-*   **Ambiguidade:** Se a pergunta for ambígua e puder se referir a múltiplas composições (ex: "Qual o custo da alvenaria?"), prefira a resposta do tipo \`ListaComposicoes\` para que o usuário possa escolher.
+*   **Pergunta de Fato Específico ("Qual o consumo...", "Qual o custo..."):** Use \`RespostaDireta\`.
+*   **Pergunta de Listagem ("Quais são...", "Me mostre tudo sobre..."):** Use \`ListaComposicoes\`.
+*   **Pergunta Aberta ou Analítica ("Por que...", "Qual a mais produtiva..."):** Use \`RespostaAnalitica\`. Baseie sua resposta na Seção 7 (Análise do Engenheiro).
+*   **Pergunta Fora de Escopo:** Use \`NaoEncontrado\`.
+*   **Ambiguidade:** Se a pergunta for ambígua (ex: "Qual o custo da alvenaria?"), prefira \`ListaComposicoes\` para que o usuário possa escolher.
 
 **6.0 DADOS PARA ANÁLISE**
-
 *   **PERGUNTA DO USUÁRIO:** "${query}"
 *   **BASE DE DADOS DE COMPOSIÇÕES:** ${JSON.stringify(compositions)}
     `;
 
     try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction,
-                responseMimeType: "application/json",
-            }
+        const model = aiInstance.getGenerativeModel({ 
+            model: 'gemini-2.5-flash', 
+            systemInstruction: systemInstruction 
         });
-        // Remove potential markdown fences for cleaner parsing
-        const text = response.text;
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const text = response.text();
+
         if (typeof text === 'string') {
             const cleanedText = text.replace(/```json\n?|\n?```/g, '');
-            return cleanedText;
+            return JSON.parse(cleanedText) as GeminiResponse;
         } else {
             console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
@@ -266,465 +216,9 @@ type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnalitica | Na
     }
 };
 
-
-// FIX: Implemented parseInsumos function
-export const parseInsumos = async (text: string): Promise<Partial<Insumo>[]> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-
-    const prompt = `
-**AÇÃO:** Você é um especialista em análise de dados de engenharia. Sua tarefa é receber um texto bruto contendo uma lista de insumos e extrair CADA item em um objeto JSON estruturado.
-
-**REGRAS:**
-1.  **EXTRAÇÃO COMPLETA:** Analise cada linha. Ignore linhas vazias ou de comentário.
-2.  **INTERPRETAÇÃO INTELIGENTE:**
-    *   **Nome:** Extraia o nome principal do insumo.
-    *   **Marca:** Se uma marca for mencionada (ex: "Votoran", "Quartzolit", "similar"), extraia para o campo 'marca'. Se não houver, deixe nulo.
-    *   **Unidade:** Extraia a unidade de medida (ex: "kg", "m³", "un", "L").
-    *   **Custo:** Extraia o valor numérico do custo. Converta vírgulas para pontos.
-    *   **Tipo:** Classifique o insumo como 'Material', 'MaoObra' ou 'Equipamento'.
-    *   **Observação:** Se a IA fizer alguma suposição ou encontrar algo ambíguo, adicione uma nota curta no campo 'observacao'.
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-Retorne um array de objetos JSON. Cada objeto deve seguir esta estrutura:
-\`\`\`json
-{
-  "nome": "string",
-  "unidade": "string",
-  "custo": number,
-  "tipo": "'Material' | 'MaoObra' | 'Equipamento'",
-  "marca": "string | null",
-  "observacao": "string | null"
-}
-\`\`\`
-
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        
-        let textToParse = response.text;
-        if (typeof textToParse !== 'string') {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-        
-        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
-        // Procura o início e o fim do bloco de código JSON.
-        const jsonStartMarker = "```json";
-        const jsonEndMarker = "```";
-
-        let startIndex = textToParse.indexOf(jsonStartMarker);
-
-        // Se encontrou o marcador ```json, extrai o conteúdo.
-        if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length; // Pula o marcador inicial
-            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            
-            if (endIndex > startIndex) {
-                textToParse = textToParse.slice(startIndex, endIndex).trim();
-            }
-        }
-        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
-        // A lógica de JSON.parse() abaixo cuidará da validação.
-
-        const parsedData = JSON.parse(textToParse);
-        if (Array.isArray(parsedData)) {
-            return parsedData;
-        }
-        
-        throw new Error("A IA não retornou um array de insumos no formato esperado.");
-    } catch (error) {
-        console.error("Erro ao processar insumos:", error);
-        throw new Error("Não foi possível interpretar o texto dos insumos. Verifique o formato e tente novamente.");
-    }
-};
-
-// FIX: Implemented BatchSimilarityResult type
-export type BatchSimilarityResult = {
-    newInsumoId: string;
-    existingInsumoId: string;
-    similarityScore: number; // 0-100
-    reasoning: string;
-};
-
-type ParsedInsumoForPrompt = { id: string; nome?: string; marca?: string; };
-type ExistingInsumoForPrompt = { id: string; nome: string; marca?: string; };
-
-// FIX: Implemented findSimilarInsumosInBatch function
-export const findSimilarInsumosInBatch = async (
-    newInsumos: ParsedInsumoForPrompt[],
-    existingInsumos: ExistingInsumoForPrompt[]
-): Promise<BatchSimilarityResult[]> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance || newInsumos.length === 0 || existingInsumos.length === 0) {
-        return [];
-    }
-    
-    const prompt = `
-**AÇÃO:** Você é um especialista em "Entity Resolution" para bancos de dados de insumos de construção. Sua tarefa é comparar um lote de novos insumos com uma lista de insumos existentes e identificar possíveis duplicatas.
-
-**REGRAS DE COMPARAÇÃO:**
-1.  **FOCO SEMÂNTICO:** Compare pelo significado, não apenas pelo texto exato. "Cimento CPII" é o mesmo que "Cimento CP-II".
-2.  **MARCA É IMPORTANTE:** "Cimento Votoran" e "Cimento Campeão" são o mesmo insumo base, mas de marcas diferentes. Considere-os similares, mas não idênticos.
-3.  **SCORE DE SIMILARIDADE:** Atribua um score de 0 a 100. Acima de 85 é uma forte candidata a duplicata.
-4.  **JUSTIFICATIVA:** Explique brevemente por que você considera os itens similares.
-
-**DADOS DE ENTRADA:**
-- **newInsumos:** lexible[ { "id": "temp-1", "nome": "Cimento CP-II Votoran" }, ... ]\n- **existingInsumos:** lexible[ { "id": "db-123", "nome": "Cimento Portland CP II", "marca": "Votoran" }, ... ]
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-Retorne um array de objetos. Cada objeto representa um par similar encontrado. Se um novo insumo for similar a múltiplos existentes, retorne o par com maior score. Se nenhum par for similar o suficiente (score > 70), não o inclua na resposta.
-
-\`\`\`json
-[
-  {
-    "newInsumoId": "string",
-    "existingInsumoId": "string",
-    "similarityScore": number,
-    "reasoning": "string"
-  }
-]
-\`\`\`
-
-**TAREFA:**
-Analise os seguintes dados e retorne os pares similares:
-
-**New Insumos:**
-${JSON.stringify(newInsumos)}
-
-**Existing Insumos:**
-${JSON.stringify(existingInsumos)}
-    `;
-
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-
-        let textToParse = response.text;
-        if (typeof textToParse !== 'string') {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-        
-        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
-        // Procura o início e o fim do bloco de código JSON.
-        const jsonStartMarker = "```json";
-        const jsonEndMarker = "```";
-
-        let startIndex = textToParse.indexOf(jsonStartMarker);
-
-        // Se encontrou o marcador ```json, extrai o conteúdo.
-        if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length; // Pula o marcador inicial
-            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            
-            if (endIndex > startIndex) {
-                textToParse = textToParse.slice(startIndex, endIndex).trim();
-            }
-        }
-        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
-        // A lógica de JSON.parse() abaixo cuidará da validação.
-        
-        const results: BatchSimilarityResult[] = JSON.parse(textToParse);
-        if (Array.isArray(results)) {
-            return results;
-        }
-        
-        return [];
-    } catch (error) {
-        console.error("Erro ao verificar similaridade de insumos:", error);
-        return [];
-    }
-};
-
-// FIX: Implemented getDetailedScope function
-export const getDetailedScope = async (
-    services: Service[],
-    doubts: Doubt[],
-    clientAnswers: string
-): Promise<{
-    detailedServices: Service[];
-    pendingDoubts: Doubt[];
-    internalQueries: InternalQuery[];
-}> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-    
-    const prompt = `
-**PERSONA:** Engenheiro de Custos Sênior com "Visão de Dono".
-
-**TAREFA:** Sua função é atuar como um "motor de clareza". Você receberá uma lista de serviços preliminares, uma lista de dúvidas técnicas que você mesmo gerou anteriormente, e as respostas que o cliente forneceu. Seu objetivo é cruzar essas informações para criar uma lista de serviços detalhada e acionável.
-
-**DADOS DE ENTRADA:**
-1.  **Serviços Preliminares:** ${JSON.stringify(services)}
-2.  **Dúvidas Geradas:** ${JSON.stringify(doubts)}
-3.  **Respostas do Cliente:** "${clientAnswers}"
-
-**REGRAS DE PROCESSAMENTO:**
-1.  **DETALHAMENTO:** Para cada serviço preliminar, use as respostas do cliente para adicionar uma descrição detalhada. Se a resposta esclarece uma dúvida sobre um serviço, incorpore essa informação na descrição do serviço correspondente. Ex: Se a dúvida era "Qual a espessura do contrapiso?" e a resposta foi "5cm", o serviço "Execução de contrapiso" deve ter em sua descrição "Execução de contrapiso com espessura de 5cm...".
-2.  **IDENTIFICAR DÚVIDAS PENDENTES:** Se uma dúvida crucial não foi respondida ou a resposta foi ambígua, adicione-a à lista de 'pendingDoubts'.
-3.  **GERAR CONSULTAS INTERNAS:** Se a resposta do cliente for vaga mas você PODE tomar uma decisão padrão de mercado para não parar o orçamento, crie uma "consulta interna". Isso é uma premissa que você está adotando, que precisará ser validada. Ex: Se a resposta for "use a tinta padrão", sua consulta interna pode ser: "Premissa Adotada: Foi especificada a utilização de tinta acrílica fosca branca, padrão Suvinil ou similar. Confirmar se este padrão é aceitável."
-4.  **QUANTIDADES "VERBA":** Se um serviço tem quantidade 0 ou unidade 'vb'/'verba', mantenha-o, mas adicione uma observação de que precisa ser quantificado.
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-Retorne APENAS um objeto JSON com a seguinte estrutura:
-\`\`\`json
-{
-  "detailedServices": [ { "id": "string", "nome": "string", "description": "string", "quantidade": number, "unidade": "string" }, ... ],
-  "pendingDoubts": [ { "id": "string", "question": "string" }, ... ],
-  "internalQueries": [ { "id": "string", "query": "string" }, ... ]
-}
-\`\`\`
-    `;
-
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
-        if (typeof text === 'string') {
-            return JSON.parse(text);
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao detalhar escopo:", error);
-        throw new Error("A IA falhou ao gerar o escopo detalhado.");
-    }
-};
-
-type QueryResponse = {
-    query: InternalQuery;
-    status: ApprovalStatus;
-    comment: string;
-};
-
-// FIX: Implemented processQueryResponses function
-export const processQueryResponses = async (
-    queryResponses: QueryResponse[],
-    currentServices: Service[]
-): Promise<{ newServices: Service[], newObservations: string[] }> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-
-    const prompt = `
-**PERSONA:** Engenheiro de Custos Sênior.
-
-**TAREFA:** Você receberá uma lista de "consultas internas" (premissas que a IA adotou) e a resposta do engenheiro (aprovada/rejeitada + comentário). Sua tarefa é interpretar essas respostas e, se necessário, gerar novos serviços ou observações para o projeto.
-
-**DADOS DE ENTRADA:**
-1.  **Respostas às Consultas:** ${JSON.stringify(queryResponses)}
-2.  **Serviços Atuais:** ${JSON.stringify(currentServices)}
-
-**REGRAS:**
-- Se uma consulta foi **aprovada**, não faça nada, a premissa é válida.
-- Se uma consulta foi **rejeitada** com um comentário, você DEVE agir:
-    - Se o comentário for uma **correção simples** (ex: "Usar tinta acetinada ao invés de fosca"), gere uma **observação** para o projeto.
-    - Se o comentário introduz um **novo trabalho** (ex: "Além da pintura, precisamos incluir a remoção da textura existente"), gere um **novo serviço** na lista 'newServices'.
-    - Use o bom senso de engenharia.
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-\`\`\`json
-{
-  "newServices": [ { "id": "string", "nome": "string", "description": "string", "quantidade": number, "unidade": "string" }, ... ],
-  "newObservations": ["string", ...]
-}
-\`\`\`
-    `;
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
-        if (typeof text === 'string') {
-            return JSON.parse(text);
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao processar respostas de consulta:", error);
-        throw new Error("A IA falhou ao processar as respostas.");
-    }
-};
-
-// FIX: Implemented refineScopeFromEdits function
-export const refineScopeFromEdits = async (
-    currentServices: Service[],
-    instruction: string
-): Promise<{ updatedServices: Service[] }> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-
-    const prompt = `
-**PERSONA:** Assistente de Engenharia de Custos.
-
-**TAREFA:** Você receberá uma lista de serviços e uma instrução de edição. Modifique a lista de serviços conforme a instrução. Você pode adicionar, remover ou modificar serviços.
-
-**DADOS DE ENTRADA:**
-1.  **Serviços Atuais:** ${JSON.stringify(currentServices)}
-2.  **Instrução de Edição:** "${instruction}"
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-Retorne a lista completa de serviços, com as modificações aplicadas.
-\`\`\`json
-{
-  "updatedServices": [ { "id": "string", "nome": "string", "description": "string", "quantidade": number, "unidade": "string" }, ... ]
-}
-\`\`\`
-    `;
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
-        if (typeof text === 'string') {
-            return JSON.parse(text);
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao refinar escopo com edições:", error);
-        throw new Error("A IA falhou ao refinar o escopo.");
-    }
-};
-
-// FIX: Implemented getValueEngineeringAnalysis function
-export const getValueEngineeringAnalysis = async (
-    services: Service[]
-): Promise<{ valueEngineeringAnalysis: ValueEngineeringAnalysis[] }> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-
-    const prompt = `
-**PERSONA:** Engenheiro de Valor Estratégico.
-
-**TAREFA:** Analise a lista de serviços de um projeto e identifique os 2-3 itens com maior potencial de otimização (custo, prazo, performance). Para cada item, proponha 2-3 alternativas, comparando-as de forma clara.
-
-**DADOS DE ENTRADA:**
-- **Serviços:** ${JSON.stringify(services)}
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-\`\`\`json
-{
-  "valueEngineeringAnalysis": [
-    {
-      "itemId": "string (ID do serviço original)",
-      "itemName": "string (Nome do serviço original)",
-      "options": [
-        {
-          "solution": "string (Descrição da solução alternativa)",
-          "relativeCost": "string (Ex: '10% mais barato', 'Custo similar', '25% mais caro')",
-          "deadlineImpact": "string (Ex: 'Reduz em 2 dias', 'Sem impacto', 'Aumenta em 1 semana')",
-          "pros": ["string", ...],
-          "cons": ["string", ...],
-          "recommendation": "string (Recomendação técnica da IA)"
-        },
-        ...
-      ]
-    },
-    ...
-  ]
-}
-\`\`\`
-`;
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
-        if (typeof text === 'string') {
-            return JSON.parse(text);
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-};
-
-// FIX: Implemented getRefinementSuggestions function
-export const getRefinementSuggestions = async (
-    pendingDoubts: Doubt[]
-): Promise<{ refinementSuggestions: RefinementSuggestion[] }> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
-
-    if (pendingDoubts.length === 0) {
-        return { refinementSuggestions: [] };
-    }
-
-    const prompt = `
-**PERSONA:** Assistente de Orçamentista.
-
-**TAREFA:** Você receberá uma lista de dúvidas técnicas que ainda não foram respondidas. Para cada dúvida, gere 2-3 respostas de múltipla escolha que sejam as mais comuns ou prováveis em um cenário de construção civil. Para cada resposta, adicione uma 'tag' curta indicando o impacto (ex: "+Custo", "-Prazo", "Padrão").
-
-**DADOS DE ENTRADA:**
-- **Dúvidas Pendentes:** ${JSON.stringify(pendingDoubts)}
-
-**ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA:**
-\`\`\`json
-{
-  "refinementSuggestions": [
-    {
-      "doubtId": "string (ID da dúvida original)",
-      "question": "string (Texto da dúvida original)",
-      "suggestedAnswers": [
-        { "answer": "string", "tag": "string", "actionType": "'modify' | 'add'" },
-        ...
-      ]
-    },
-    ...
-  ]
-}
-\`\`\`
-`;
-    try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-        const text = response.text;
-        if (typeof text === 'string') {
-            return JSON.parse(text);
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao gerar sugestões de refinamento:", error);
-        throw new Error("A IA falhou ao gerar as sugestões de refinamento.");
-    }
-};
-
-
-
+// ====================================================================================================
+// FUNÇÃO parseCompositions CORRIGIDA E ROBUSTA (MANTIDA COM SINTAXE DE UMA ETAPA)
+// ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
     if (!text || text.trim().length < 50) { // Limite de 50 caracteres
@@ -767,7 +261,10 @@ export const parseCompositions = async (text: string): Promise<ParsedComposicao[
         const aiInstance = getAiInstance();
         if (!aiInstance) throw new Error("IA não configurada.");
 
-        const result = await aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" }).generateContent(fullPrompt);
+        const result = await aiInstance.generateContent({
+            model: "gemini-2.5-flash",
+            contents: fullPrompt
+        });
         const response = result.response;
         const responseText = response.text();
 
@@ -825,43 +322,28 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
     `;
 
     try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            // FIX: Simplified 'contents' from [{ parts: [{ text: prompt }], role: 'user' }] to just prompt string for single-turn text.
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        let textToParse = response.text();
 
-        let textToParse = response.text;
         if (typeof textToParse !== 'string') {
-            console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
         
-        // Nova lógica para extrair o JSON de forma robusta, sem Regex.
-        // Procura o início e o fim do bloco de código JSON.
         const jsonStartMarker = "```json";
         const jsonEndMarker = "```";
-
         let startIndex = textToParse.indexOf(jsonStartMarker);
-
-        // Se encontrou o marcador ```json, extrai o conteúdo.
         if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length; // Pula o marcador inicial
+            startIndex += jsonStartMarker.length;
             const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            
             if (endIndex > startIndex) {
                 textToParse = textToParse.slice(startIndex, endIndex).trim();
             }
         }
-        // Se não encontrou o marcador ```json, assume que a resposta inteira pode ser o JSON.
-        // A lógica de JSON.parse() abaixo cuidará da validação.
 
         const parsedData: ParsedComposicao = JSON.parse(textToParse);
         
-        // Basic validation
         if (!parsedData.titulo) {
              throw new Error("A IA retornou um objeto de composição inválido.");
         }
@@ -875,23 +357,20 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
 }
 
 export interface BatchRelevanceResult {
-  idNovaComposicao: string; // ID temporário da composição importada
+  idNovaComposicao: string;
   candidatos: {
-    idExistente: string;     // ID da composição existente que é similar
-    titulo: string;          // Título da composição existente
-    escopoResumido: string;  // Resumo do escopo da composição existente
-    relevanciaScore: number; // Score de 0 a 100
-    motivo: string;          // Breve explicação da IA
+    idExistente: string;
+    titulo: string;
+    escopoResumido: string;
+    relevanciaScore: number;
+    motivo: string;
   }[];
 }
 
 
 export const findRelevantCompositionsInBatch = async (newCompositions: (ParsedComposicao & { id: string })[], existingCompositions: Composicao[]): Promise<BatchRelevanceResult[]> => {
     const aiInstance = getAiInstance();
-    if (!aiInstance || newCompositions.length === 0) {
-        return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
-    }
-     if (existingCompositions.length === 0) {
+    if (!aiInstance || newCompositions.length === 0 || existingCompositions.length === 0) {
         return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
     }
 
@@ -941,14 +420,7 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
     {
       "idNovaComposicao": "temp-1",
       "candidatos": [
-        { "idExistente": "db-101", "titulo": "Execução de Contrapiso (e=4cm) sobre Enchimento", "escopoResumido": "Execução de contrapiso com argamassa industrializada para nivelamento de base, com espessura final de 4cm, sobre camada de enchimento leve existente. Não inclui a preparação da base.", "relevanciaScore": 98, "motivo": "Mesmo serviço e espessura (4cm)." },
-        { "idExistente": "db-102", "titulo": "Enchimento Leve de Piso - EPS 10cm + Contrapiso 5cm", "escopoResumido": "Sistema completo de regularização de piso, incluindo camada de 10cm de EPS e posterior contrapiso de 5cm de espessura.", "relevanciaScore": 75, "motivo": "Serviço relacionado, mas com espessura (5cm vs 4cm) e método diferentes." }
-      ]
-    },
-    {
-      "idNovaComposicao": "temp-2",
-      "candidatos": [
-        { "idExistente": "db-103", "titulo": "Demolição Manual de Alvenaria de Tijolos", "escopoResumido": "Demolição manual de paredes de alvenaria de vedação com tijolos cerâmicos, sem aproveitamento. Inclui a remoção do material para área de descarte.", "relevanciaScore": 95, "motivo": "Mesmo serviço de demolição de alvenaria." }
+        { "idExistente": "db-101", "titulo": "Execução de Contrapiso (e=4cm) sobre Enchimento", "escopoResumido": "Execução de contrapiso com argamassa industrializada...", "relevanciaScore": 98, "motivo": "Mesmo serviço e espessura (4cm)." }
       ]
     }
   ]
@@ -964,23 +436,17 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
     const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
     
      try {
-        const response = await aiInstance.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: fullPrompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent(fullPrompt);
+        const response = result.response;
+        const textToParse = response.text();
 
-        const textToParse = response.text;
         if (typeof textToParse !== 'string') {
-            console.error("Resposta da IA inválida ou sem texto:", response);
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
         const parsedData = JSON.parse(textToParse);
 
         if (parsedData && Array.isArray(parsedData.resultados)) {
-            // Fallback for escopoResumido if AI fails to provide it
             return parsedData.resultados.map((res: any) => ({
                 ...res,
                 candidatos: res.candidatos.map((cand: any) => ({
@@ -999,18 +465,14 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
 }
 
 export const exportCompositionToMarkdown = (composition: Composicao): string => {
-    let markdown = 
-    ``;
+    let markdown = ``;
 
     const createTable = (headers: string[], rows: (string|number)[][]) => {
-        if (rows.length === 0) return 'N/A\n';
-        let table = `| ${headers.join(' | ')} |
-`;
-        table += `|${headers.map(() => ' :--- ').join('|')}|
-`;
+        if (!rows || rows.length === 0) return 'N/A\n';
+        let table = `| ${headers.join(' | ')} |\n`;
+        table += `|${headers.map(() => ' :--- ').join('|')}|\n`;
         rows.forEach(row => {
-            table += `| ${row.join(' | ')} |
-`;
+            table += `| ${row.join(' | ')} |\n`;
         });
         return table;
     };
@@ -1026,18 +488,18 @@ export const exportCompositionToMarkdown = (composition: Composicao): string => 
     markdown += `**Incluso:** ${composition.premissas?.incluso || ''}\n`;
     markdown += `**Não Incluso:** ${composition.premissas?.naoIncluso || ''}\n\n`;
 
-    markdown += `# 3.0 LISTA DE INSUMOS E MÃO DE OBRA (para 1,00 ${composition.unidade})\n\n`;
+    markdown += `# 3.0 LISTA DE INSUMOS E MÃO DE OBRA (para 1,00 ${composition.unidade || 'unidade'})\n\n`;
     
     markdown += `## 3.1 Materiais\n`;
-    const materialRows = composition.insumos?.materiais?.map(i => [i.item, i.unidade, i.quantidade.toFixed(4), i.valorUnitario.toFixed(2), i.valorTotal.toFixed(2)]) || [];
+    const materialRows = composition.insumos?.materiais?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
     markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], materialRows) + '\n';
     
     markdown += `## 3.2 Equipamentos\n`;
-    const equipRows = composition.insumos?.equipamentos?.map(i => [i.item, i.unidade, i.quantidade.toFixed(4), i.valorUnitario.toFixed(2), i.valorTotal.toFixed(2)]) || [];
+    const equipRows = composition.insumos?.equipamentos?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
     markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], equipRows) + '\n';
 
     markdown += `## 3.3 Mão de Obra\n`;
-    const moRows = (composition.maoDeObra || []).map(mo => [mo.funcao, mo.hhPorUnidade.toFixed(4), mo.custoUnitario.toFixed(2), mo.custoTotal.toFixed(2)]);
+    const moRows = (composition.maoDeObra || []).map(mo => [mo.funcao, mo.hhPorUnidade, mo.custoUnitario, mo.custoTotal]);
     markdown += createTable(['Função', 'HH/Unidade', 'Custo Unit.', 'Custo Total'], moRows) + '\n\n';
 
     markdown += `# 4.0 GUIAS, SEGURANÇA E QUALIDADE\n`;
