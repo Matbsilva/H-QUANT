@@ -257,7 +257,43 @@ type NaoEncontrado = {
 };
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions REVISADA E ROBUSTA (COM PADRÃO FIXO E PERSONA COMPLETA)
+// FUNÇÕES AUXILIARES PARA CORREÇÃO DE JSON
+// ====================================================================================================
+
+// Função auxiliar para corrigir escapes inválidos em JSON
+function fixInvalidEscapes(jsonString: string): string {
+    // Remove escapes inválidos: \ seguido de qualquer caractere que não seja um dos escapáveis válidos
+    return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
+}
+
+// Função auxiliar para extrair e limpar JSON
+function extractAndCleanJson(text: string): string {
+    let textToParse = text;
+
+    // Extração robusta do JSON do bloco de código
+    const jsonStartMarker = "```json";
+    const jsonEndMarker = "```";
+    let startIndex = textToParse.indexOf(jsonStartMarker);
+    
+    if (startIndex !== -1) {
+        startIndex += jsonStartMarker.length;
+        const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+        if (endIndex > startIndex) {
+            textToParse = textToParse.slice(startIndex, endIndex).trim();
+        }
+    }
+
+    // Remove possíveis marcadores residuais
+    textToParse = textToParse.replace(/```json|```/g, '').trim();
+
+    // Corrige escapes inválidos
+    textToParse = fixInvalidEscapes(textToParse);
+
+    return textToParse;
+}
+
+// ====================================================================================================
+// FUNÇÃO parseCompositions CORRIGIDA - TRATAMENTO ROBUSTO DE JSON
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -268,41 +304,22 @@ export const parseCompositions = async (text: string): Promise<ParsedComposicao[
     const prompt = `
 **1.0 PERSONA E OBJETIVOS ESTRATÉGICOS**
 
-Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que opera com uma Visão de Dono absoluta. Seu objetivo final é gerar inteligência de negócio para garantir propostas competitivas, maximizar a lucratividade e entregar valor e segurança ao cliente. Seus princípios de atuação são:
-
-*   **Busca pelo Custo-Benefício Ótimo:** Seu foco é ser competitivo. Você deve sempre buscar a solução mais econômica possível, desde que ela respeite integralmente as normas técnicas e as recomendações dos fabricantes.
-*   **Foco Obsessivo em Mitigação de Riscos:** Sua primeira prioridade é identificar e neutralizar qualquer risco (técnico, executivo, logístico ou de escopo) antes que ele se materialize em prejuízo, retrabalho ou atraso.
-*   **Consultor, Não Calculista:** Você atua como um consultor técnico, explicando o "porquê" de cada decisão, sinalizando riscos e guiando para a melhor solução.
+Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que opera com uma Visão de Dono absoluta.
 
 **2.0 TAREFA PRINCIPAL**
 
-Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retornar um array de objetos JSON perfeitamente estruturados. O padrão é FIXO e segue a estrutura que você conhece.
+Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retornar um array de objetos JSON perfeitamente estruturados.
 
-**3.0 REGRAS DE PROCESSAMENTO (RIGOROSAS MAS FLEXÍVEIS)**
+**3.0 REGRAS DE PROCESSAMENTO**
 
-*   **3.1. Validação Inteligente de Entrada:**
-    *   Se o texto seguir o padrão Quantisa (com seções numeradas 1.0, 2.0, 3.0, etc.), prossiga com a extração.
-    *   Se houver pequenos erros de digitação ou formatação, use seu julgamento de engenheiro para corrigir e extrair.
-    *   Só interrompa se o texto for completamente irreconhecível como composição.
+*   **Extração Completa:** Extraia TODAS as seções do padrão.
+*   **Preservação de Formatação:** Mantenha a formatação Markdown original em todos os campos de texto.
+*   **Tabela 7.3:** Capture EXATAMENTE o número de linhas presentes na tabela de produtividade.
+*   **Tolerância a Variações:** Use seu conhecimento para interpretar corretamente pequenas divergências no padrão.
 
-*   **3.2. Extração Completa e Fiel:**
-    *   Extraia TODAS as seções do padrão. Não pule nenhuma.
-    *   Para tabelas (especialmente 7.3), capture EXATAMENTE o número de linhas presentes.
-    *   Preserve a formatação Markdown original em todos os campos de texto.
+**4.0 ESTRUTURA DE DADOS ALVO**
 
-*   **3.3. Regras Específicas para a Seção 7 (Análise do Engenheiro):**
-    *   **7.1 Nota:** Capture o texto completo, mesmo que longo.
-    *   **7.2 Fontes e Referências:** Mantenha a formatação com negrito e quebras de linha.
-    *   **7.3 Quadro de Produtividade:** EXTRAIA A TABELA COMPLETA, independentemente do número de linhas. Se tiver 2 linhas, capture 2; se tiver 4, capture 4. Preserve toda a formatação Markdown da tabela.
-    *   **7.4 Análise e Recomendação:** Capture o texto completo com toda a formatação.
-
-*   **3.4. Tolerância a Variações:**
-    *   Se encontrar pequenas divergências no padrão, use seu conhecimento de engenharia para interpretar corretamente.
-    *   O importante é extrair os dados corretos, mesmo que o formato tenha pequenas imperfeições.
-
-**4.0 ESTRUTURA DE DADOS ALVO (PADRÃO QUANTISA V1.2.1 COMPLETO)**
-
-Sua saída deve seguir ESTA estrutura exata. Preencha TODOS os campos que encontrar no texto:
+Sua saída deve seguir ESTA estrutura exata:
 
 \`\`\`json
 [{
@@ -327,9 +344,7 @@ Sua saída deve seguir ESTA estrutura exata. Preencha TODOS os campos que encont
         "unidade": "string", 
         "quantidade": number,
         "valorUnitario": number,
-        "valorTotal": number,
-        "pesoUnitario": number,
-        "pesoTotal": number
+        "valorTotal": number
       }
     ],
     "equipamentos": [
@@ -350,39 +365,11 @@ Sua saída deve seguir ESTA estrutura exata. Preencha TODOS os campos que encont
       "custoTotal": number
     }
   ],
-  "quantitativosConsolidados": {
-    "listaCompraMateriais": [
-      {
-        "item": "string",
-        "unidadeCompra": "string",
-        "quantidadeBruta": number,
-        "quantidadeAComprar": number,
-        "custoTotalEstimado": number
-      }
-    ],
-    "necessidadeEquipamentos": [],
-    "quadroMaoDeObraTotal": []
-  },
   "indicadores": {
     "custoMateriais_porUnidade": number,
     "custoEquipamentos_porUnidade": number,
     "custoMaoDeObra_porUnidade": number,
-    "custoDiretoTotal_porUnidade": number,
-    "custoMateriais_total": number,
-    "custoEquipamentos_total": number,
-    "custoMaoDeObra_total": number,
-    "custoDiretoTotal_total": number,
-    "maoDeObraDetalhada": [
-      {
-        "funcao": "string",
-        "hhPorUnidade": number,
-        "hhTotal": number
-      }
-    ],
-    "pesoMateriais_porUnidade": number,
-    "pesoMateriais_total": number,
-    "volumeEntulho_porUnidade": number,
-    "volumeEntulho_total": number
+    "custoDiretoTotal_porUnidade": number
   },
   "guias": {
     "dicasExecucao": "string",
@@ -393,15 +380,14 @@ Sua saída deve seguir ESTA estrutura exata. Preencha TODOS os campos que encont
     "nota": "string",
     "fontesReferencias": "string",
     "quadroProdutividade": "string",
-    "analiseRecomendacao": "string",
-    "notaDaImportacao": "string"
+    "analiseRecomendacao": "string"
   }
 }]
 \`\`\`
 
 **5.0 FORMATO DE SAÍDA OBRIGATÓRIO**
 
-Retorne APENAS um array JSON válido encapsulado em \`\`\`json ... \`\`\`. Não inclua explicações.
+Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. Sua resposta deve ser parseável diretamente por JSON.parse().
 `;
 
     const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
@@ -419,33 +405,57 @@ Retorne APENAS um array JSON válido encapsulado em \`\`\`json ... \`\`\`. Não 
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
 
-        let textToParse = responseText;
+        console.log("Resposta bruta da IA:", responseText); // Para debug
 
-        // Extração robusta do JSON
-        const jsonStartMarker = "```json";
-        const jsonEndMarker = "```";
-        let startIndex = textToParse.indexOf(jsonStartMarker);
-        if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length;
-            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            if (endIndex > startIndex) {
-                textToParse = textToParse.slice(startIndex, endIndex).trim();
+        let textToParse = extractAndCleanJson(responseText);
+
+        console.log("Texto limpo para parse:", textToParse); // Para debug
+
+        let parsedData;
+        try {
+            parsedData = JSON.parse(textToParse);
+        } catch (parseError) {
+            console.warn("Primeira tentativa de parse falhou, tentando correções...", parseError);
+            
+            // Tenta corrigir problemas comuns
+            textToParse = textToParse
+                .replace(/(\w+):/g, '"$1":') // Adiciona aspas em chaves não citadas
+                .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas trailing
+                .replace(/,\s*}/g, '}') // Remove vírgulas antes de fechar chaves
+                .replace(/,\s*]/g, ']'); // Remove vírgulas antes de fechar colchetes
+
+            try {
+                parsedData = JSON.parse(textToParse);
+            } catch (secondError) {
+                console.error("Falha após correções:", secondError);
+                const errorMessage = secondError instanceof Error ? secondError.message : 'Erro desconhecido';
+                throw new Error(`Não foi possível interpretar o JSON retornado pela IA. Erro: ${errorMessage}`);
             }
         }
 
-        const parsedData = JSON.parse(textToParse);
-
+        // Validação da estrutura
         if (Array.isArray(parsedData)) {
-            return parsedData as ParsedComposicao[];
+            const validCompositions = parsedData.filter((comp: any) => 
+                comp && typeof comp === 'object' && comp.titulo
+            );
+            
+            if (validCompositions.length === 0) {
+                throw new Error("A IA retornou um array vazio ou sem composições válidas.");
+            }
+            
+            return validCompositions as ParsedComposicao[];
         }
-        if (typeof parsedData === 'object' && parsedData !== null) {
+        
+        if (typeof parsedData === 'object' && parsedData !== null && parsedData.titulo) {
             return [parsedData as ParsedComposicao];
         }
+        
         throw new Error("A IA não retornou um array ou objeto de composições válido.");
 
     } catch (error) {
         console.error("Erro ao processar composições:", error);
-        throw new Error("Não foi possível interpretar o texto da composição. Verifique o formato e tente novamente.");
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        throw new Error(`Não foi possível interpretar o texto da composição: ${errorMessage}`);
     }
 };
 
@@ -476,16 +486,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
         
-        const jsonStartMarker = "```json";
-        const jsonEndMarker = "```";
-        let startIndex = textToParse.indexOf(jsonStartMarker);
-        if (startIndex !== -1) {
-            startIndex += jsonStartMarker.length;
-            const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-            if (endIndex > startIndex) {
-                textToParse = textToParse.slice(startIndex, endIndex).trim();
-            }
-        }
+        textToParse = extractAndCleanJson(textToParse);
 
         const parsedData: ParsedComposicao = JSON.parse(textToParse);
         
@@ -587,7 +588,9 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
         if (typeof textToParse !== 'string') {
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
-        const parsedData = JSON.parse(textToParse);
+
+        const cleanedText = extractAndCleanJson(textToParse);
+        const parsedData = JSON.parse(cleanedText);
 
         if (parsedData && Array.isArray(parsedData.resultados)) {
             return parsedData.resultados.map((res: any) => ({
