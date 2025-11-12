@@ -39,7 +39,6 @@ export type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnaliti
 
 /**
  * Lazily initializes and returns the GoogleGenerativeAI instance.
- * This function ensures the SDK is only instantiated on the client-side when needed.
  */
 function getAiInstance() {
     if (ai) {
@@ -52,6 +51,87 @@ function getAiInstance() {
     }
     console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
     return null;
+}
+
+// ====================================================================================================
+// SISTEMA DE RETRY ROBUSTO PARA ERROS TEMPORÁRIOS DA API - NOVA IMPLEMENTAÇÃO
+// ====================================================================================================
+
+interface RetryOptions {
+  maxRetries?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  backoffFactor?: number;
+}
+
+/**
+ * Sistema de retry com exponential backoff para lidar com erros temporários da API
+ */
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const {
+    maxRetries = 3,
+    initialDelay = 1000,
+    maxDelay = 10000,
+    backoffFactor = 2
+  } = options;
+
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Verifica se é um erro que vale a pena tentar novamente
+      const shouldRetry = isRetryableError(error);
+      
+      if (!shouldRetry || attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Calcula o delay com exponential backoff
+      const delay = Math.min(initialDelay * Math.pow(backoffFactor, attempt), maxDelay);
+      
+      console.warn(`Tentativa ${attempt + 1}/${maxRetries + 1} falhou. Tentando novamente em ${delay}ms...`, {
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        delay
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
+
+/**
+ * Verifica se o erro é temporário e vale a pena tentar novamente
+ */
+function isRetryableError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  
+  const errorMessage = error.message.toLowerCase();
+  
+  // Lista de erros que são temporários
+  const retryablePatterns = [
+    'overloaded',
+    'service unavailable',
+    '503',
+    '429',
+    'too many requests',
+    'rate limit',
+    'quota exceeded',
+    'internal error',
+    'timeout',
+    'network error',
+    'connection reset'
+  ];
+  
+  return retryablePatterns.some(pattern => errorMessage.includes(pattern));
 }
 
 const fileToGenerativePart = async (file: File) => {
@@ -74,7 +154,7 @@ export const analyzeText = async (prompt: string): Promise<string> => {
 
     try {
         const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(prompt);
+        const result = await withRetry(() => model.generateContent(prompt));
         const response = result.response;
         const text = response.text();
         if (typeof text === 'string') {
@@ -85,7 +165,8 @@ export const analyzeText = async (prompt: string): Promise<string> => {
         }
     } catch (error) {
         console.error("Erro ao analisar texto:", error);
-        throw new Error("A IA falhou ao analisar o texto.");
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        throw new Error(`A IA falhou ao analisar o texto: ${errorMessage}`);
     }
 };
 
@@ -97,7 +178,7 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
 
     try {
         const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent([{ text: prompt }, imagePart]);
+        const result = await withRetry(() => model.generateContent([{ text: prompt }, imagePart]));
         const response = result.response;
         const text = response.text();
         if (typeof text === 'string') {
@@ -108,7 +189,8 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
         }
     } catch (error) {
         console.error("Erro ao analisar imagem:", error);
-        throw new Error("A IA falhou ao analisar a imagem.");
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        throw new Error(`A IA falhou ao analisar a imagem: ${errorMessage}`);
     }
 };
 
@@ -122,7 +204,7 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
         const model = aiInstance.getGenerativeModel({ 
             model: 'gemini-2.5-flash'
         });
-        const result = await model.generateContent(prompt);
+        const result = await withRetry(() => model.generateContent(prompt));
         const response = result.response;
         const text = response.text();
 
@@ -138,7 +220,8 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
         }
     } catch (error) {
         console.error("Erro ao gerar resposta com busca:", error);
-        return { text: "Ocorreu um erro ao buscar a resposta. Tente novamente." };
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        return { text: `Ocorreu um erro ao buscar a resposta: ${errorMessage}. Tente novamente.` };
     }
 };
 
@@ -239,7 +322,7 @@ type NaoEncontrado = {
             model: 'gemini-2.5-flash',
             systemInstruction: systemInstruction 
         });
-        const result = await model.generateContent(prompt);
+        const result = await withRetry(() => model.generateContent(prompt));
         const response = result.response;
         const text = response.text();
 
@@ -252,7 +335,8 @@ type NaoEncontrado = {
         }
     } catch (error) {
         console.error("Erro ao buscar nas composições:", error);
-        throw new Error("A IA falhou ao buscar na base de dados de composições.");
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        throw new Error(`A IA falhou ao buscar na base de dados de composições: ${errorMessage}`);
     }
 };
 
@@ -260,17 +344,13 @@ type NaoEncontrado = {
 // FUNÇÕES AUXILIARES PARA CORREÇÃO DE JSON
 // ====================================================================================================
 
-// Função auxiliar para corrigir escapes inválidos em JSON
 function fixInvalidEscapes(jsonString: string): string {
-    // Remove escapes inválidos: \ seguido de qualquer caractere que não seja um dos escapáveis válidos
     return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
 }
 
-// Função auxiliar para extrair e limpar JSON
 function extractAndCleanJson(text: string): string {
     let textToParse = text;
 
-    // Extração robusta do JSON do bloco de código
     const jsonStartMarker = "```json";
     const jsonEndMarker = "```";
     let startIndex = textToParse.indexOf(jsonStartMarker);
@@ -283,17 +363,14 @@ function extractAndCleanJson(text: string): string {
         }
     }
 
-    // Remove possíveis marcadores residuais
     textToParse = textToParse.replace(/```json|```/g, '').trim();
-
-    // Corrige escapes inválidos
     textToParse = fixInvalidEscapes(textToParse);
 
     return textToParse;
 }
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions CORRIGIDA - TRATAMENTO ROBUSTO DE JSON
+// FUNÇÃO parseCompositions ATUALIZADA - ESTRUTURA COMPLETA COM RETRY
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -310,14 +387,19 @@ Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que
 
 Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retornar um array de objetos JSON perfeitamente estruturados.
 
-**3.0 REGRAS DE PROCESSAMENTO**
+**3.0 REGRAS DE PROCESSAMENTO - ATUALIZADAS**
 
-*   **Extração Completa:** Extraia TODAS as seções do padrão.
+*   **Extração Completa:** Extraia TODAS as seções do padrão, incluindo QUANTITATIVOS CONSOLIDADOS e INDICADORES.
 *   **Preservação de Formatação:** Mantenha a formatação Markdown original em todos os campos de texto.
 *   **Tabela 7.3:** Capture EXATAMENTE o número de linhas presentes na tabela de produtividade.
 *   **Tolerância a Variações:** Use seu conhecimento para interpretar corretamente pequenas divergências no padrão.
+*   **CÁLCULOS AUTOMÁTICOS:** Calcule valorTotal (quantidade × valorUnitario) para materiais, equipamentos e mão de obra.
+*   **METADADOS ESTRATÉGICOS:** 
+    - Se o texto contiver um **código**, extraia para o campo 'codigo'
+    - Para **grupo** e **subgrupo**: Analise o contexto e sugira com base no título/escopo
+    - Use o campo 'analiseEngenheiro.notaDaImportacao' para explicar suas sugestões
 
-**4.0 ESTRUTURA DE DADOS ALVO**
+**4.0 ESTRUTURA DE DADOS ALVO - COMPLETA**
 
 Sua saída deve seguir ESTA estrutura exata:
 
@@ -365,11 +447,25 @@ Sua saída deve seguir ESTA estrutura exata:
       "custoTotal": number
     }
   ],
+  "quantitativosConsolidados": {
+    "listaCompraMateriais": [
+      {
+        "item": "string",
+        "unidade": "string",
+        "quantidade": number,
+        "valorUnitario": number,
+        "valorTotal": number
+      }
+    ]
+  },
   "indicadores": {
     "custoMateriais_porUnidade": number,
     "custoEquipamentos_porUnidade": number,
     "custoMaoDeObra_porUnidade": number,
-    "custoDiretoTotal_porUnidade": number
+    "custoDiretoTotal_porUnidade": number,
+    "custoIndireto_porUnidade": number,
+    "custoTotal_porUnidade": number,
+    "produtividadeMedia_hhPorUnidade": number
   },
   "guias": {
     "dicasExecucao": "string",
@@ -380,7 +476,8 @@ Sua saída deve seguir ESTA estrutura exata:
     "nota": "string",
     "fontesReferencias": "string",
     "quadroProdutividade": "string",
-    "analiseRecomendacao": "string"
+    "analiseRecomendacao": "string",
+    "notaDaImportacao": "string"
   }
 }]
 \`\`\`
@@ -397,7 +494,15 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
         if (!aiInstance) throw new Error("IA não configurada.");
 
         const model = aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent(fullPrompt);
+        
+        // Usa o sistema de retry para lidar com erros temporários
+        const result = await withRetry(() => model.generateContent(fullPrompt), {
+            maxRetries: 3,
+            initialDelay: 1000,
+            maxDelay: 10000,
+            backoffFactor: 2
+        });
+        
         const response = result.response;
         const responseText = response.text();
 
@@ -405,11 +510,11 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
             throw new Error("A IA retornou uma resposta inválida ou vazia.");
         }
 
-        console.log("Resposta bruta da IA:", responseText); // Para debug
+        console.log("Resposta bruta da IA:", responseText);
 
         let textToParse = extractAndCleanJson(responseText);
 
-        console.log("Texto limpo para parse:", textToParse); // Para debug
+        console.log("Texto limpo para parse:", textToParse);
 
         let parsedData;
         try {
@@ -417,12 +522,11 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
         } catch (parseError) {
             console.warn("Primeira tentativa de parse falhou, tentando correções...", parseError);
             
-            // Tenta corrigir problemas comuns
             textToParse = textToParse
-                .replace(/(\w+):/g, '"$1":') // Adiciona aspas em chaves não citadas
-                .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas trailing
-                .replace(/,\s*}/g, '}') // Remove vírgulas antes de fechar chaves
-                .replace(/,\s*]/g, ']'); // Remove vírgulas antes de fechar colchetes
+                .replace(/(\w+):/g, '"$1":')
+                .replace(/,(\s*[}\]])/g, '$1')
+                .replace(/,\s*}/g, '}')
+                .replace(/,\s*]/g, ']');
 
             try {
                 parsedData = JSON.parse(textToParse);
@@ -478,7 +582,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
 
     try {
         const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(prompt);
+        const result = await withRetry(() => model.generateContent(prompt));
         const response = result.response;
         let textToParse = response.text();
 
@@ -498,7 +602,8 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
 
     } catch (error) {
         console.error("Erro ao revisar composição:", error);
-        throw new Error("Não foi possível aplicar a correção na composição.");
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        throw new Error(`Não foi possível aplicar a correção na composição: ${errorMessage}`);
     }
 }
 
@@ -581,7 +686,7 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
     
      try {
         const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await model.generateContent(fullPrompt);
+        const result = await withRetry(() => model.generateContent(fullPrompt));
         const response = result.response;
         const textToParse = response.text();
 
