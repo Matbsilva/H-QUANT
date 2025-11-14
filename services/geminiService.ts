@@ -54,7 +54,7 @@ function getAiInstance() {
 }
 
 // ====================================================================================================
-// SISTEMA DE RETRY ROBUSTO PARA ERROS TEMPORÁRIOS DA API - NOVA IMPLEMENTAÇÃO
+// SISTEMA DE RETRY ROBUSTO PARA ERROS TEMPORÁRIOS DA API
 // ====================================================================================================
 
 interface RetryOptions {
@@ -370,7 +370,7 @@ function extractAndCleanJson(text: string): string {
 }
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions ATUALIZADA - ESTRUTURA COMPLETA COM RETRY
+// FUNÇÃO parseCompositions ATUALIZADA - FIDELIDADE ABSOLUTA NA EXTRAÇÃO
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -387,17 +387,30 @@ Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que
 
 Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retornar um array de objetos JSON perfeitamente estruturados.
 
-**3.0 REGRAS DE PROCESSAMENTO - ATUALIZADAS**
+**3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE ABSOLUTA**
 
-*   **Extração Completa:** Extraia TODAS as seções do padrão, incluindo QUANTITATIVOS CONSOLIDADOS e INDICADORES.
-*   **Preservação de Formatação:** Mantenha a formatação Markdown original em todos os campos de texto.
-*   **Tabela 7.3:** Capture EXATAMENTE o número de linhas presentes na tabela de produtividade.
-*   **Tolerância a Variações:** Use seu conhecimento para interpretar corretamente pequenas divergências no padrão.
-*   **CÁLCULOS AUTOMÁTICOS:** Calcule valorTotal (quantidade × valorUnitario) para materiais, equipamentos e mão de obra.
-*   **METADADOS ESTRATÉGICOS:** 
-    - Se o texto contiver um **código**, extraia para o campo 'codigo'
-    - Para **grupo** e **subgrupo**: Analise o contexto e sugira com base no título/escopo
-    - Use o campo 'analiseEngenheiro.notaDaImportacao' para explicar suas sugestões
+*   **EXTRATOR, NÃO INTERPRETADOR:** Sua única função é EXTRAIR dados, NÃO interpretar, calcular ou corrigir.
+*   **TRANSCRIÇÃO FIEL:** Copie EXATAMENTE os valores das tabelas, mesmo que pareçam inconsistentes.
+*   **PRESERVAÇÃO DE DADOS:** Mantenha TODOS os números, textos e formatação originais.
+*   **SEÇÕES OBRIGATÓRIAS:** Extraia TODAS as seções, incluindo "Quantitativos Consolidados" e "Indicadores".
+*   **PRESERVAÇÃO DE FORMATAÇÃO:** Mantenha a formatação Markdown original em todos os campos de texto.
+
+**REGRA DE OURO - NÃO CALCULE:**
+🚫 NÃO recalcule totais (quantidade × valorUnitario)
+🚫 NÃO verifique consistência matemática  
+🚫 NÃO corrija valores aparentemente errados
+🚫 NÃO complete dados faltantes
+✅ APENAS TRANSCREVA os valores exatos do texto original
+
+**METADADOS:**
+- **Código:** Extraia apenas se existir explicitamente no texto
+- **Grupo/Subgrupo:** Sugira com base no contexto, mas NÃO altere valores extraídos
+- **Nota da Importação:** Use para explicar decisões de extração, NÃO para cálculos
+
+**ATENÇÃO ESPECIAL PARA SEÇÕES 4 E 5:**
+- **Quantitativos Consolidados:** Extraia TODAS as linhas da tabela de lista de compras
+- **Indicadores:** Extraia TODOS os valores da tabela, incluindo "Valor Total"
+- **NÃO OMITA** nenhuma linha ou coluna, mesmo que pareça redundante
 
 **4.0 ESTRUTURA DE DADOS ALVO - COMPLETA**
 
