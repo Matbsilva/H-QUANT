@@ -341,7 +341,7 @@ type NaoEncontrado = {
 };
 
 // ====================================================================================================
-// FUNÇÕES AUXILIARES PARA CORREÇÃO DE JSON
+// FUNÇÕES AUXILIARES PARA CORREÇÃO DE JSON - MELHORADAS
 // ====================================================================================================
 
 function fixInvalidEscapes(jsonString: string): string {
@@ -351,6 +351,7 @@ function fixInvalidEscapes(jsonString: string): string {
 function extractAndCleanJson(text: string): string {
     let textToParse = text;
 
+    // Extração robusta do JSON do bloco de código
     const jsonStartMarker = "```json";
     const jsonEndMarker = "```";
     let startIndex = textToParse.indexOf(jsonStartMarker);
@@ -363,14 +364,17 @@ function extractAndCleanJson(text: string): string {
         }
     }
 
+    // Remove possíveis marcadores residuais
     textToParse = textToParse.replace(/```json|```/g, '').trim();
+
+    // Corrige escapes inválidos
     textToParse = fixInvalidEscapes(textToParse);
 
     return textToParse;
 }
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions ATUALIZADA - FIDELIDADE ABSOLUTA NA EXTRAÇÃO
+// FUNÇÃO parseCompositions CORRIGIDA - JSON 100% VÁLIDO
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -389,115 +393,121 @@ Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retorna
 
 **3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE ABSOLUTA**
 
+*   **REGRA DE OURO (SINTAXE JSON PERFEITA):** Sua resposta DEVE ser um objeto JSON 100% válido, que possa ser processado por \`JSON.parse()\` sem erros. Preste atenção máxima a vírgulas, chaves e colchetes. A falha em produzir um JSON válido é uma falha crítica da tarefa.
+
 *   **EXTRATOR, NÃO INTERPRETADOR:** Sua única função é EXTRAIR dados, NÃO interpretar, calcular ou corrigir.
 *   **TRANSCRIÇÃO FIEL:** Copie EXATAMENTE os valores das tabelas, mesmo que pareçam inconsistentes.
 *   **PRESERVAÇÃO DE DADOS:** Mantenha TODOS os números, textos e formatação originais.
 *   **SEÇÕES OBRIGATÓRIAS:** Extraia TODAS as seções, incluindo "Quantitativos Consolidados" e "Indicadores".
 *   **PRESERVAÇÃO DE FORMATAÇÃO:** Mantenha a formatação Markdown original em todos os campos de texto.
 
-**REGRA DE OURO - NÃO CALCULE:**
-🚫 NÃO recalcule totais (quantidade × valorUnitario)
-🚫 NÃO verifique consistência matemática  
-🚫 NÃO corrija valores aparentemente errados
-🚫 NÃO complete dados faltantes
-✅ APENAS TRANSCREVA os valores exatos do texto original
+**🚫 PROIBIDO CALCULAR:**
+- NÃO recalcule totais (quantidade × valorUnitario)
+- NÃO verifique consistência matemática  
+- NÃO corrija valores aparentemente errados
+- NÃO complete dados faltantes
+- ✅ APENAS TRANSCREVA os valores exatos do texto original
 
 **METADADOS:**
 - **Código:** Extraia apenas se existir explicitamente no texto
 - **Grupo/Subgrupo:** Sugira com base no contexto, mas NÃO altere valores extraídos
-- **Nota da Importação:** Use para explicar decisões de extração, NÃO para cálculos
+- **Nota da Importação:** Use para explicar decisões de extração
 
 **ATENÇÃO ESPECIAL PARA SEÇÕES 4 E 5:**
 - **Quantitativos Consolidados:** Extraia TODAS as linhas da tabela de lista de compras
 - **Indicadores:** Extraia TODOS os valores da tabela, incluindo "Valor Total"
 - **NÃO OMITA** nenhuma linha ou coluna, mesmo que pareça redundante
 
-**4.0 ESTRUTURA DE DADOS ALVO - COMPLETA**
+**4.0 ESTRUTURA DE DADOS ALVO - JSON EXEMPLO VÁLIDO**
 
-Sua saída deve seguir ESTA estrutura exata:
+Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
 
 \`\`\`json
-[{
-  "codigo": "string",
-  "titulo": "string", 
-  "unidade": "string",
-  "quantidadeReferencia": number,
-  "grupo": "string",
-  "subgrupo": "string",
-  "tags": ["string"],
-  "classificacaoInterna": "string",
-  "premissas": {
-    "escopo": "string",
-    "metodo": "string", 
-    "incluso": "string",
-    "naoIncluso": "string"
-  },
-  "insumos": {
-    "materiais": [
+[
+  {
+    "codigo": "COMP-001",
+    "titulo": "Execução de Contrapiso Regularizador (e=4cm)",
+    "unidade": "m²",
+    "quantidadeReferencia": 1.0,
+    "grupo": "Acabamentos",
+    "subgrupo": "Pisos",
+    "tags": ["contrapiso", "regularização", "argamassa"],
+    "classificacaoInterna": "Alta Produtividade",
+    "premissas": {
+      "escopo": "Execução de contrapiso com argamassa industrializada...",
+      "metodo": "Aplicação manual com desempenadeira...",
+      "incluso": "Preparação da base, aplicação da argamassa...",
+      "naoIncluso": "Regularização da base, impermeabilização..."
+    },
+    "insumos": {
+      "materiais": [
+        {
+          "item": "Argamassa Colante AC-I",
+          "unidade": "kg",
+          "quantidade": 12.5,
+          "valorUnitario": 0.85,
+          "valorTotal": 10.63
+        }
+      ],
+      "equipamentos": [
+        {
+          "item": "Betoneira 400L",
+          "unidade": "h",
+          "quantidade": 0.02,
+          "valorUnitario": 15.0,
+          "valorTotal": 0.3
+        }
+      ]
+    },
+    "maoDeObra": [
       {
-        "item": "string",
-        "unidade": "string", 
-        "quantidade": number,
-        "valorUnitario": number,
-        "valorTotal": number
+        "funcao": "Pedreiro",
+        "hhPorUnidade": 0.15,
+        "custoUnitario": 25.0,
+        "custoTotal": 3.75
       }
     ],
-    "equipamentos": [
-      {
-        "item": "string",
-        "unidade": "string",
-        "quantidade": number, 
-        "valorUnitario": number,
-        "valorTotal": number
-      }
-    ]
-  },
-  "maoDeObra": [
-    {
-      "funcao": "string",
-      "hhPorUnidade": number,
-      "custoUnitario": number,
-      "custoTotal": number
+    "quantitativosConsolidados": {
+      "listaCompraMateriais": [
+        {
+          "item": "Argamassa Colante AC-I",
+          "unidade": "kg",
+          "quantidade": 12.5,
+          "valorUnitario": 0.85,
+          "valorTotal": 10.63
+        }
+      ]
+    },
+    "indicadores": {
+      "custoMateriais_porUnidade": 10.63,
+      "custoEquipamentos_porUnidade": 0.3,
+      "custoMaoDeObra_porUnidade": 3.75,
+      "custoDiretoTotal_porUnidade": 14.68,
+      "custoIndireto_porUnidade": 2.2,
+      "custoTotal_porUnidade": 16.88,
+      "produtividadeMedia_hhPorUnidade": 0.15
+    },
+    "guias": {
+      "dicasExecucao": "Aplicar sobre base limpa e umedecida...",
+      "alertasSeguranca": "Utilizar EPI completo...",
+      "criteriosQualidade": "Superfície plana com tolerância de 3mm..."
+    },
+    "analiseEngenheiro": {
+      "nota": "Composição bem estruturada com boa relação custo-benefício",
+      "fontesReferencias": "TCPO 2024, SINAPI 2024",
+      "quadroProdutividade": "Produtividade alinhada com mercado...",
+      "analiseRecomendacao": "Recomendada para obras de médio porte",
+      "notaDaImportacao": "Sugestão: GRUPO [Acabamentos] SUBGRUPO [Pisos] - Composição de contrapiso com especificações claras"
     }
-  ],
-  "quantitativosConsolidados": {
-    "listaCompraMateriais": [
-      {
-        "item": "string",
-        "unidade": "string",
-        "quantidade": number,
-        "valorUnitario": number,
-        "valorTotal": number
-      }
-    ]
-  },
-  "indicadores": {
-    "custoMateriais_porUnidade": number,
-    "custoEquipamentos_porUnidade": number,
-    "custoMaoDeObra_porUnidade": number,
-    "custoDiretoTotal_porUnidade": number,
-    "custoIndireto_porUnidade": number,
-    "custoTotal_porUnidade": number,
-    "produtividadeMedia_hhPorUnidade": number
-  },
-  "guias": {
-    "dicasExecucao": "string",
-    "alertasSeguranca": "string", 
-    "criteriosQualidade": "string"
-  },
-  "analiseEngenheiro": {
-    "nota": "string",
-    "fontesReferencias": "string",
-    "quadroProdutividade": "string",
-    "analiseRecomendacao": "string",
-    "notaDaImportacao": "string"
   }
-}]
+]
 \`\`\`
 
 **5.0 FORMATO DE SAÍDA OBRIGATÓRIO**
 
 Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. Sua resposta deve ser parseável diretamente por JSON.parse().
+
+**IMPORTANTE: SEGUA EXATAMENTE A ESTRUTURA ACIMA. NÃO ADICIONE CAMPOS EXTRAS COMO "pesoUnitario" ou "pesoTotal".**
 `;
 
     const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
@@ -529,24 +539,37 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
 
         console.log("Texto limpo para parse:", textToParse);
 
+        // VALIDAÇÃO E CORREÇÃO ROBUSTA DO JSON
         let parsedData;
-        try {
-            parsedData = JSON.parse(textToParse);
-        } catch (parseError) {
-            console.warn("Primeira tentativa de parse falhou, tentando correções...", parseError);
-            
-            textToParse = textToParse
-                .replace(/(\w+):/g, '"$1":')
-                .replace(/,(\s*[}\]])/g, '$1')
-                .replace(/,\s*}/g, '}')
-                .replace(/,\s*]/g, ']');
+        let parseAttempts = 0;
+        const maxParseAttempts = 3;
 
+        while (parseAttempts < maxParseAttempts) {
             try {
                 parsedData = JSON.parse(textToParse);
-            } catch (secondError) {
-                console.error("Falha após correções:", secondError);
-                const errorMessage = secondError instanceof Error ? secondError.message : 'Erro desconhecido';
-                throw new Error(`Não foi possível interpretar o JSON retornado pela IA. Erro: ${errorMessage}`);
+                break; // Se deu certo, sai do loop
+            } catch (parseError) {
+                parseAttempts++;
+                console.warn(`Tentativa ${parseAttempts} de parse falhou:`, parseError);
+                
+                if (parseAttempts === maxParseAttempts) {
+                    console.error("Todas as tentativas de parse falharam:", parseError);
+                    const errorMessage = parseError instanceof Error ? parseError.message : 'Erro desconhecido';
+                    throw new Error(`Não foi possível interpretar o JSON retornado pela IA após ${maxParseAttempts} tentativas. Erro: ${errorMessage}`);
+                }
+
+                // Tenta corrigir problemas comuns de JSON
+                textToParse = textToParse
+                    .replace(/(\w+):/g, '"$1":') // Adiciona aspas em chaves não citadas
+                    .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas trailing
+                    .replace(/,\s*}/g, '}') // Remove vírgulas antes de fechar chaves
+                    .replace(/,\s*]/g, ']') // Remove vírgulas antes de fechar colchetes
+                    .replace(/'/g, '"') // Substitui aspas simples por duplas
+                    .replace(/\\n/g, ' ') // Remove quebras de linha problemáticas
+                    .replace(/\s+/g, ' ') // Normaliza espaços
+                    .trim();
+
+                console.log(`Texto corrigido na tentativa ${parseAttempts}:`, textToParse);
             }
         }
 
@@ -560,10 +583,12 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
                 throw new Error("A IA retornou um array vazio ou sem composições válidas.");
             }
             
+            console.log(`✅ ${validCompositions.length} composição(ões) válida(s) extraída(s)`);
             return validCompositions as ParsedComposicao[];
         }
         
         if (typeof parsedData === 'object' && parsedData !== null && parsedData.titulo) {
+            console.log("✅ 1 composição válida extraída");
             return [parsedData as ParsedComposicao];
         }
         
@@ -590,7 +615,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
         - **Instruções de Correção do Usuário:** "${instruction}"
 
         **FORMATO DE SAÍDA OBRIGATÓRIO:**
-        Retorne APENAS o objeto JSON corrigido. Não adicione nenhum texto, explicação ou formatação adicional antes ou depois do objeto JSON. Sua resposta deve ser diretamente parseável.
+        Retorne APENAS o objeto JSON corrigido. Não adicione nenhum texto, explicação ou formatação adicional antes ou depois do objeto JSON. Sua resposta deve ser diretamente parseável por JSON.parse().
     `;
 
     try {
