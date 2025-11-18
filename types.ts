@@ -1,5 +1,3 @@
-
-
 export enum Priority {
     High = 'Alta',
     Medium = 'Média',
@@ -197,23 +195,23 @@ export interface ComposicaoIndicadorMaoDeObra {
 }
 
 export interface ComposicaoIndicadores {
-  custoMateriais_porUnidade: number;
-  custoEquipamentos_porUnidade: number;
-  custoMaoDeObra_porUnidade: number;
-  custoDiretoTotal_porUnidade: number;
+  custoMateriaisPorUnidade: number;
+  custoEquipamentosPorUnidade: number;
+  custoMaoDeObraPorUnidade: number;
+  custoDiretoTotalPorUnidade: number;
   
-  custoMateriais_total: number;
-  custoEquipamentos_total: number;
-  custoMaoDeObra_total: number;
-  custoDiretoTotal_total: number;
+  custoMateriaisTotal: number;
+  custoEquipamentosTotal: number;
+  custoMaoDeObraTotal: number;
+  custoDiretoTotalTotal: number;
   
-  maoDeObraDetalhada: ComposicaoIndicadorMaoDeObra[]; // Array para flexibilidade
+  maoDeObraDetalhada: ComposicaoIndicadorMaoDeObra[];
   
-  pesoMateriais_porUnidade: number;
-  pesoMateriais_total: number;
+  pesoMateriaisPorUnidade: number;
+  pesoMateriaisTotal: number;
   
-  volumeEntulho_porUnidade: number;
-  volumeEntulho_total: number;
+  volumeEntulhoPorUnidade: number;
+  volumeEntulhoTotal: number;
 }
 
 export interface Composicao {

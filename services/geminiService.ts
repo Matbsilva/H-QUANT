@@ -374,7 +374,7 @@ function extractAndCleanJson(text: string): string {
 }
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions CORRIGIDA - JSON 100% VÁLIDO
+// FUNÇÃO parseCompositions CORRIGIDA - FIDELIDADE ABSOLUTA
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -401,12 +401,22 @@ Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retorna
 *   **SEÇÕES OBRIGATÓRIAS:** Extraia TODAS as seções, incluindo "Quantitativos Consolidados" e "Indicadores".
 *   **PRESERVAÇÃO DE FORMATAÇÃO:** Mantenha a formatação Markdown original em todos os campos de texto.
 
-**🚫 PROIBIDO CALCULAR:**
-- NÃO recalcule totais (quantidade × valorUnitario)
-- NÃO verifique consistência matemática  
-- NÃO corrija valores aparentemente errados
-- NÃO complete dados faltantes
-- ✅ APENAS TRANSCREVA os valores exatos do texto original
+**🚫 REGRAS ABSOLUTAS DE FIDELIDADE:**
+
+**TRANSCRIÇÃO LITERAL - SUA ÚNICA FUNÇÃO:**
+- EXTRAIA VALORES EXATAMENTE como aparecem no texto original
+- PRESERVE a quantidade de referência original (ex: "100.00 m²" → 100.00, NÃO 1.0)
+- MANTENHA valores aparentemente inconsistentes (ex: quantidade × valorUnitario ≠ valorTotal)
+- COPIE campos NULL/VAZIOS exatamente como estão
+- NÃO PADRONIZE unidades, formatos ou valores
+
+**EXEMPLOS DE FIDELIDADE:**
+- Texto: "Quantidade de Referência: 100.00 m²" → "quantidadeReferencia": 100.00
+- Texto: "Valor Total: 1.050,00" (errado) → "valorTotal": 1050.00 (mantém o "erro")
+- Texto: "Custo Unitário: R$ 25,00 - Custo Total: R$ 30,00" → mantém a inconsistência
+- Texto: campo vazio ou "não informado" → valor null ou string vazia
+
+**SUA MISSÃO: SCANNER, NÃO ENGENHEIOR. TRANSCREVA, NÃO INTERPRETE.**
 
 **METADADOS:**
 - **Código:** Extraia apenas se existir explicitamente no texto
@@ -428,7 +438,7 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
     "codigo": "COMP-001",
     "titulo": "Execução de Contrapiso Regularizador (e=4cm)",
     "unidade": "m²",
-    "quantidadeReferencia": 1.0,
+    "quantidadeReferencia": 100.00,
     "grupo": "Acabamentos",
     "subgrupo": "Pisos",
     "tags": ["contrapiso", "regularização", "argamassa"],
@@ -485,7 +495,14 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
       "custoDiretoTotal_porUnidade": 14.68,
       "custoIndireto_porUnidade": 2.2,
       "custoTotal_porUnidade": 16.88,
-      "produtividadeMedia_hhPorUnidade": 0.15
+      "produtividadeMedia_hhPorUnidade": 0.15,
+      "custoMateriais_total": 1063.0,
+      "custoEquipamentos_total": 30.0,
+      "custoMaoDeObra_total": 375.0,
+      "custoDiretoTotal_total": 1468.0,
+      "custoIndireto_total": 220.0,
+      "custoTotal_total": 1688.0,
+      "produtividadeMedia_hhTotal": 15.0
     },
     "guias": {
       "dicasExecucao": "Aplicar sobre base limpa e umedecida...",

@@ -5,11 +5,11 @@ import { parseCompositions, reviseParsedComposition, type ParsedComposicao, find
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-
 type ReviewableComposicao = ParsedComposicao & {
     reviewState: {
         isRevising: boolean;
         instruction: string;
+        codigo: string;
         grupo: string;
         subgrupo: string;
     }
@@ -94,28 +94,72 @@ export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCo
                 <h4 className="font-semibold text-sm mt-3 mb-1 text-gray-700 dark:text-gray-300">4.1 Lista de Compra de Materiais</h4>
                  <Table headers={['Item', 'Un. Compra', 'Qtd. Bruta', 'Qtd. a Comprar', 'Custo Estimado']}>
                      {composition.quantitativosConsolidados?.listaCompraMateriais?.map((item, i) => (
-                         <tr key={i}><td className="px-4 py-1">{item.item}</td><td className="px-4 py-1">{item.unidadeCompra}</td><td className="px-4 py-1">{item.quantidadeBruta?.toFixed(2)}</td><td className="px-4 py-1">{item.quantidadeAComprar}</td><td className="px-4 py-1 font-mono">{item.custoTotalEstimado?.toFixed(2)}</td></tr>
-                     ))}
+                         <tr key={i}>
+                             <td className="px-4 py-1">{item.item}</td>
+                             <td className="px-4 py-1">{item.unidadeCompra}</td>
+                             <td className="px-4 py-1">{item.quantidadeBruta?.toFixed(2)}</td>
+                             <td className="px-4 py-1">{item.quantidadeAComprar}</td>
+                             <td className="px-4 py-1 font-mono">{item.custoTotalEstimado?.toFixed(2)}</td>
+                         </tr>
+                     )) || (
+                         <tr>
+                             <td colSpan={5} className="px-4 py-2 text-center text-gray-500">
+                                 Nenhum item de lista de compra extraído
+                             </td>
+                         </tr>
+                     )}
                  </Table>
             </Section>
             
             <Section title="5. Indicadores Chave de Custo e Planejamento">
                  <Table headers={['Indicador', 'Unidade', `Valor (por ${composition.unidade})`, `Valor Total (para ${composition.quantidadeReferencia} ${composition.unidade})`]}>
-                    {composition.indicadores && Object.entries(composition.indicadores).map(([key, value]) => {
-                        if (key === 'maoDeObraDetalhada') return null;
-                        const label = key.replace(/_/g, ' ').replace(/porUnidade|total/, '').replace(/\b\w/g, l => l.toUpperCase());
-                        if (key.endsWith('_porUnidade')) {
-                             const totalKey = key.replace('_porUnidade', '_total') as keyof typeof composition.indicadores;
-                             const totalValue = composition.indicadores?.[totalKey];
-                            return (
-                                <tr key={key}><td className="px-4 py-1 font-semibold">{label}</td><td className="px-4 py-1">{typeof value === 'number' ? 'R$' : ''}</td><td className="px-4 py-1 font-mono">{typeof value === 'number' ? value.toFixed(2) : ''}</td><td className="px-4 py-1 font-mono">{typeof totalValue === 'number' ? totalValue.toFixed(2) : ''}</td></tr>
-                            )
-                        }
-                        return null;
-                    })}
-                     {composition.indicadores?.maoDeObraDetalhada?.map(mo => (
-                         <tr key={mo.funcao}><td className="px-4 py-1 font-semibold">{mo.funcao}</td><td className="px-4 py-1">HH</td><td className="px-4 py-1 font-mono">{mo.hhPorUnidade?.toFixed(2)}</td><td className="px-4 py-1 font-mono">{mo.hhTotal?.toFixed(2)}</td></tr>
-                     ))}
+                    {/* Custo Materiais */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Materiais</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMateriaisPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMateriaisTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Equipamentos */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Equipamentos</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoEquipamentosPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoEquipamentosTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Mão de Obra */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Mão de Obra</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMaoDeObraPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMaoDeObraTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Direto Total */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Direto Total</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoDiretoTotalPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoDiretoTotalTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
                  </Table>
             </Section>
             
@@ -149,13 +193,12 @@ export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCo
     );
 };
 
-
 // --- Full Detail Display for Review ---
 const CompositionDetailDisplay: React.FC<{
     composition: ReviewableComposicao;
     index: number;
     onRequestRevision: (index: number, instruction: string) => void;
-    onFieldChange: (index: number, field: 'instruction' | 'grupo' | 'subgrupo', value: string) => void;
+    onFieldChange: (index: number, field: 'instruction' | 'codigo' | 'grupo' | 'subgrupo', value: string) => void;
 }> = ({ composition, index, onRequestRevision, onFieldChange }) => {
 
     const Section = ({ title, children, noTextColor = false }: { title: string, children?: React.ReactNode, noTextColor?: boolean }) => (
@@ -184,8 +227,7 @@ const CompositionDetailDisplay: React.FC<{
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700 text-base font-sans">
             {/* Header */}
             <div>
-                {/* FIX: The 'codigo' property does not exist on the 'ReviewableComposicao' type because it is generated later. Displaying 'CÓDIGO PENDENTE' is the correct behavior during the review stage. */}
-                <p className="font-bold text-xl text-primary">{'CÓDIGO PENDENTE'} - {composition.titulo}</p>
+                <p className="font-bold text-xl text-primary">{composition.reviewState.codigo || 'CÓDIGO PENDENTE'} - {composition.titulo}</p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-2">
                     <span><strong>Unidade:</strong> {composition.unidade}</span>
                     <span><strong>Qtd. Ref:</strong> {composition.quantidadeReferencia}</span>
@@ -202,14 +244,34 @@ const CompositionDetailDisplay: React.FC<{
                     <div className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap mt-1">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{composition.analiseEngenheiro.notaDaImportacao}</ReactMarkdown>
                     </div>
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Grupo Sugerido (Editar)</label>
-                            <input type="text" value={composition.reviewState.grupo} onChange={e => onFieldChange(index, 'grupo', e.target.value.toUpperCase())} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2" />
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Código (Editar)</label>
+                            <input 
+                                type="text" 
+                                value={composition.reviewState.codigo || ''}
+                                onChange={e => onFieldChange(index, 'codigo', e.target.value.toUpperCase())}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                                placeholder="Ex: ACAB-PISOS-01"
+                            />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Subgrupo Sugerido (Editar)</label>
-                             <input type="text" value={composition.reviewState.subgrupo} onChange={e => onFieldChange(index, 'subgrupo', e.target.value.toUpperCase())} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2" />
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Grupo (Editar)</label>
+                            <input 
+                                type="text" 
+                                value={composition.reviewState.grupo} 
+                                onChange={e => onFieldChange(index, 'grupo', e.target.value.toUpperCase())}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Subgrupo (Editar)</label>
+                            <input 
+                                type="text" 
+                                value={composition.reviewState.subgrupo} 
+                                onChange={e => onFieldChange(index, 'subgrupo', e.target.value.toUpperCase())}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                            />
                         </div>
                     </div>
                 </div>
@@ -245,28 +307,72 @@ const CompositionDetailDisplay: React.FC<{
                 <h4 className="font-semibold text-sm mt-3 mb-1 text-gray-700 dark:text-gray-300">4.1 Lista de Compra de Materiais</h4>
                  <Table headers={['Item', 'Un. Compra', 'Qtd. Bruta', 'Qtd. a Comprar', 'Custo Estimado']}>
                      {composition.quantitativosConsolidados?.listaCompraMateriais?.map((item, i) => (
-                         <tr key={i}><td className="px-4 py-1">{item.item}</td><td className="px-4 py-1">{item.unidadeCompra}</td><td className="px-4 py-1">{item.quantidadeBruta?.toFixed(2)}</td><td className="px-4 py-1">{item.quantidadeAComprar}</td><td className="px-4 py-1 font-mono">{item.custoTotalEstimado?.toFixed(2)}</td></tr>
-                     ))}
+                         <tr key={i}>
+                             <td className="px-4 py-1">{item.item}</td>
+                             <td className="px-4 py-1">{item.unidadeCompra}</td>
+                             <td className="px-4 py-1">{item.quantidadeBruta?.toFixed(2)}</td>
+                             <td className="px-4 py-1">{item.quantidadeAComprar}</td>
+                             <td className="px-4 py-1 font-mono">{item.custoTotalEstimado?.toFixed(2)}</td>
+                         </tr>
+                     )) || (
+                         <tr>
+                             <td colSpan={5} className="px-4 py-2 text-center text-gray-500">
+                                 Nenhum item de lista de compra extraído
+                             </td>
+                         </tr>
+                     )}
                  </Table>
             </Section>
             
             <Section title="5. Indicadores Chave de Custo e Planejamento">
                  <Table headers={['Indicador', 'Unidade', `Valor (por ${composition.unidade})`, `Valor Total (para ${composition.quantidadeReferencia} ${composition.unidade})`]}>
-                    {composition.indicadores && Object.entries(composition.indicadores).map(([key, value]) => {
-                        if (key === 'maoDeObraDetalhada') return null;
-                        const label = key.replace(/_/g, ' ').replace(/porUnidade|total/, '').replace(/\b\w/g, l => l.toUpperCase());
-                        if (key.endsWith('_porUnidade')) {
-                             const totalKey = key.replace('_porUnidade', '_total') as keyof typeof composition.indicadores;
-                             const totalValue = composition.indicadores?.[totalKey];
-                            return (
-                                <tr key={key}><td className="px-4 py-1 font-semibold">{label}</td><td className="px-4 py-1">{typeof value === 'number' ? 'R$' : ''}</td><td className="px-4 py-1 font-mono">{typeof value === 'number' ? value.toFixed(2) : ''}</td><td className="px-4 py-1 font-mono">{typeof totalValue === 'number' ? totalValue.toFixed(2) : ''}</td></tr>
-                            )
-                        }
-                        return null;
-                    })}
-                     {composition.indicadores?.maoDeObraDetalhada?.map(mo => (
-                         <tr key={mo.funcao}><td className="px-4 py-1 font-semibold">{mo.funcao}</td><td className="px-4 py-1">HH</td><td className="px-4 py-1 font-mono">{mo.hhPorUnidade?.toFixed(2)}</td><td className="px-4 py-1 font-mono">{mo.hhTotal?.toFixed(2)}</td></tr>
-                     ))}
+                    {/* Custo Materiais */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Materiais</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMateriaisPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMateriaisTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Equipamentos */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Equipamentos</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoEquipamentosPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoEquipamentosTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Mão de Obra */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Mão de Obra</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMaoDeObraPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoMaoDeObraTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
+                    
+                    {/* Custo Direto Total */}
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Custo Direto Total</td>
+                        <td className="px-4 py-1">R$</td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoDiretoTotalPorUnidade?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-4 py-1 font-mono">
+                            {composition.indicadores?.custoDiretoTotalTotal?.toFixed(2) || '0.00'}
+                        </td>
+                    </tr>
                  </Table>
             </Section>
             
@@ -296,7 +402,6 @@ const CompositionDetailDisplay: React.FC<{
                     </div>
                 </div>
             </Section>
-
 
             {/* Revision Block */}
             <div className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-600">
@@ -366,14 +471,14 @@ const CompositionSummaryCard: React.FC<{
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
                         <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">📊 INDICADORES-CHAVE (por {composition.unidade})</h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm text-gray-800 dark:text-gray-300">
-                            <span><strong>Mat:</strong> R$ {composition.indicadores?.custoMateriais_porUnidade?.toFixed(2)}</span>
-                            <span><strong>M.O.:</strong> R$ {composition.indicadores?.custoMaoDeObra_porUnidade?.toFixed(2)}</span>
-                            <span><strong>Equip:</strong> R$ {composition.indicadores?.custoEquipamentos_porUnidade?.toFixed(2)}</span>
+                            <span><strong>Mat:</strong> R$ {composition.indicadores?.custoMateriaisPorUnidade?.toFixed(2)}</span>
+                            <span><strong>M.O.:</strong> R$ {composition.indicadores?.custoMaoDeObraPorUnidade?.toFixed(2)}</span>
+                            <span><strong>Equip:</strong> R$ {composition.indicadores?.custoEquipamentosPorUnidade?.toFixed(2)}</span>
                              {composition.indicadores?.maoDeObraDetalhada?.map(mo => (
                                 <span key={mo.funcao}><strong>{mo.funcao.match(/\(([^)]+)\)/)?.[1] || mo.funcao.split(' ')[0]}:</strong> {mo.hhPorUnidade?.toFixed(2)} HH</span>
                             ))}
-                            <span><strong>Peso:</strong> {composition.indicadores?.pesoMateriais_porUnidade?.toFixed(2)} kg</span>
-                            <span><strong>Entulho:</strong> {composition.indicadores?.volumeEntulho_porUnidade?.toFixed(3)} m³</span>
+                            <span><strong>Peso:</strong> {composition.indicadores?.pesoMateriaisPorUnidade?.toFixed(2)} kg</span>
+                            <span><strong>Entulho:</strong> {composition.indicadores?.volumeEntulhoPorUnidade?.toFixed(3)} m³</span>
                         </div>
                     </div>
                     <div className="text-right pt-2">
@@ -462,7 +567,6 @@ const SimilarityCheckView: React.FC<{
     );
 };
 
-
 export const CompositionsView: React.FC<{
     composicoes: Composicao[];
     setComposicoes: React.Dispatch<React.SetStateAction<Composicao[]>>;
@@ -514,7 +618,6 @@ export const CompositionsView: React.FC<{
         setComposicoesParaRevisao(null);
     };
 
-
     const handleProcessar = async () => {
         if (!compositionText.trim()) {
             showToast("O campo de texto não pode estar vazio.", 'error');
@@ -553,6 +656,7 @@ export const CompositionsView: React.FC<{
     
     const handleProceedToReview = (compositionsToReview: ParsedComposicao[]) => {
          const reviewable = compositionsToReview.map(p => {
+            const suggestedCodigo = p.codigo || '';
             const suggestedGrupo = p.grupo || 'GERAL';
             const suggestedSubgrupo = p.subgrupo || 'GERAL';
 
@@ -561,6 +665,7 @@ export const CompositionsView: React.FC<{
                 reviewState: {
                     isRevising: false,
                     instruction: '',
+                    codigo: suggestedCodigo,
                     grupo: suggestedGrupo,
                     subgrupo: suggestedSubgrupo,
                 }
@@ -576,7 +681,7 @@ export const CompositionsView: React.FC<{
         }
     };
 
-    const handleFieldChange = (index: number, field: 'instruction' | 'grupo' | 'subgrupo', value: string) => {
+    const handleFieldChange = (index: number, field: 'instruction' | 'codigo' | 'grupo' | 'subgrupo', value: string) => {
         setComposicoesParaRevisao(prev => {
             if (!prev) return null;
             const newComps = [...prev];
@@ -625,13 +730,22 @@ export const CompositionsView: React.FC<{
         if (!composicoesParaRevisao) return;
 
         const novasComposicoes: Composicao[] = composicoesParaRevisao.map(comp => {
-            const maxSeq = composicoes
-                .filter(c => c.grupo === comp.reviewState.grupo && c.subgrupo === comp.reviewState.subgrupo)
-                .map(c => parseInt(c.codigo.split('-')[2], 10))
-                .reduce((max, current) => Math.max(max, current), 0);
+            // Se o usuário definiu um código manualmente, usa ele
+            // Senão, gera automaticamente como antes
+            let finalCode = comp.reviewState.codigo;
             
-            const newSeq = (maxSeq + 1).toString().padStart(2, '0');
-            const newCode = `${comp.reviewState.grupo}-${comp.reviewState.subgrupo}-${newSeq}`;
+            if (!finalCode) {
+                const maxSeq = composicoes
+                    .filter(c => c.grupo === comp.reviewState.grupo && c.subgrupo === comp.reviewState.subgrupo)
+                    .map(c => {
+                        const parts = c.codigo.split('-');
+                        return parseInt(parts[parts.length - 1], 10);
+                    })
+                    .reduce((max, current) => Math.max(max, current), 0);
+                
+                const newSeq = (maxSeq + 1).toString().padStart(2, '0');
+                finalCode = `${comp.reviewState.grupo}-${comp.reviewState.subgrupo}-${newSeq}`;
+            }
 
             const finalComp: Partial<Composicao> = { ...comp };
             delete (finalComp as any).reviewState;
@@ -639,7 +753,7 @@ export const CompositionsView: React.FC<{
             return {
                 ...finalComp,
                 id: `comp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                codigo: newCode,
+                codigo: finalCode,
                 grupo: comp.reviewState.grupo,
                 subgrupo: comp.reviewState.subgrupo,
             } as Composicao;
@@ -714,7 +828,6 @@ export const CompositionsView: React.FC<{
                  )
         }
     }
-
 
     return (
         <div className="p-4 md:p-8 flex-1 overflow-y-auto text-base">
