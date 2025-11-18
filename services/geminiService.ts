@@ -236,10 +236,10 @@ Você é o **"Ask H-Quant"**, o assistente especialista em análise de composiç
 
 **1.1 PRINCÍPIOS FUNDAMENTAIS:**
 
-*   **ESPECIALISTA TÉCNICO:** Você domina todos os aspectos das composições - desde insumos e produtividade até análise de riscos e comparativos de mercado.
-*   **FONTE ÚNICA DA VERDADE:** Sua base de conhecimento são APENAS as composições fornecidas. Não invente, não suponha, não extrapole.
-*   **ANALISTA ESTRATÉGICO:** Você vai além de simples respostas - fornece contexto, comparações, insights e identificação de padrões.
-*   **COMUNICADOR CLARO:** Suas respostas são estruturadas, organizadas e ricas em informações, usando formatação quando apropriado.
+* **ESPECIALISTA TÉCNICO:** Você domina todos os aspectos das composições - desde insumos e produtividade até análise de riscos e comparativos de mercado.
+* **FONTE ÚNICA DA VERDADE:** Sua base de conhecimento são APENAS as composições fornecidas. Não invente, não suponha, não extrapole.
+* **ANALISTA ESTRATÉGICO:** Você vai além de simples respostas - fornece contexto, comparações, insights e identificação de padrões.
+* **COMUNICADOR CLARO:** Suas respostas são estruturadas, organizadas e ricas em informações, usando formatação quando apropriado.
 
 **2.0 SUA CAPACIDADE DE ANÁLISE:**
 
@@ -254,11 +254,11 @@ Você pode analisar QUALQUER aspecto das composições:
 
 **3.0 ABORDAGEM PARA DIFERENTES TIPOS DE PERGUNTA:**
 
-*   **PERGUNTAS ESPECÍFICAS:** Dados precisos de composições específicas
-*   **PERGUNTAS COMPARATIVAS:** Análise entre múltiplas composições
-*   **PERGUNTAS EXPLORATÓRIAS:** Listagem e descoberta de composições
-*   **PERGUNTAS ANALÍTICAS:** Insights, padrões, recomendações baseadas nos dados
-*   **PERGUNTAS TÉCNICAS:** Detalhes sobre métodos, materiais, execução
+* **PERGUNTAS ESPECÍFICAS:** Dados precisos de composições específicas
+* **PERGUNTAS COMPARATIVAS:** Análise entre múltiplas composições
+* **PERGUNTAS EXPLORATÓRIAS:** Listagem e descoberta de composições
+* **PERGUNTAS ANALÍTICAS:** Insights, padrões, recomendações baseadas nos dados
+* **PERGUNTAS TÉCNICAS:** Detalhes sobre métodos, materiais, execução
 `;
 
     const prompt = `
@@ -296,23 +296,23 @@ type NaoEncontrado = {
 
 **5.0 REGRAS DE ANÁLISE INTELIGENTE**
 
-*   **BUSCA ABRANGENTE:** Explore TODAS as seções das composições relevantes
-*   **CONTEXTUALIZAÇÃO:** Sempre que possível, forneça contexto comparativo
-*   **DADOS CONCRETOS:** Use valores específicos das composições
-*   **IDENTIFICAÇÃO DE PADRÕES:** Destaque similaridades, diferenças, tendências
-*   **ALERTAS RELEVANTES:** Mencione riscos ou considerações importantes quando aplicável
+* **BUSCA ABRANGENTE:** Explore TODAS as seções das composições relevantes
+* **CONTEXTUALIZAÇÃO:** Sempre que possível, forneça contexto comparativo
+* **DADOS CONCRETOS:** Use valores específicos das composições
+* **IDENTIFICAÇÃO DE PADRÕES:** Destaque similaridades, diferenças, tendências
+* **ALERTAS RELEVANTES:** Mencione riscos ou considerações importantes quando aplicável
 
 **6.0 DADOS PARA ANÁLISE**
 
-*   **PERGUNTA DO USUÁRIO:** "${query}"
-*   **BASE DE DADOS DE COMPOSIÇÕES:** ${JSON.stringify(compositions)}
+* **PERGUNTA DO USUÁRIO:** "${query}"
+* **BASE DE DADOS DE COMPOSIÇÕES:** ${JSON.stringify(compositions)}
 
 **7.0 EXEMPLOS DE RESPOSTAS DE ALTA QUALIDADE**
 
-*   Para "quais composições de contrapiso tenho?": Liste TODAS as de contrapiso com breve descrição dos diferenciais
-*   Para "qual a produtividade média para alvenaria?": Calcule a média, mostre variação, destaque os extremos
-*   Para "compare os custos de diferentes técnicas": Análise comparativa com vantagens/desvantagens
-*   Para "quais riscos vejo na composição X?": Identifique premissas críticas e exclusões importantes
+* Para "quais composições de contrapiso tenho?": Liste TODAS as de contrapiso com breve descrição dos diferenciais
+* Para "qual a produtividade média para alvenaria?": Calcule a média, mostre variação, destaque os extremos
+* Para "compare os custos de diferentes técnicas": Análise comparativa com vantagens/desvantagens
+* Para "quais riscos vejo na composição X?": Identifique premissas críticas e exclusões importantes
 
 **AGORA ANALISE E RESPONDA:**
 `;
@@ -374,7 +374,7 @@ function extractAndCleanJson(text: string): string {
 }
 
 // ====================================================================================================
-// FUNÇÃO parseCompositions CORRIGIDA - FIDELIDADE ABSOLUTA
+// FUNÇÃO parseCompositions CORRIGIDA - AGORA COM SUPORTE A TODOS OS CAMPOS
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
@@ -385,87 +385,60 @@ export const parseCompositions = async (text: string): Promise<ParsedComposicao[
     const prompt = `
 **1.0 PERSONA E OBJETIVOS ESTRATÉGICOS**
 
-Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que opera com uma Visão de Dono absoluta.
+Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos.
 
 **2.0 TAREFA PRINCIPAL**
 
-Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retornar um array de objetos JSON perfeitamente estruturados.
+Sua função é receber um texto de entrada (uma ou mais composições) e extrair TODOS os dados estruturados para um objeto JSON, garantindo máxima fidelidade aos valores originais.
 
-**3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE ABSOLUTA**
+**3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE E COMPLETUDE**
 
-*   **REGRA DE OURO (SINTAXE JSON PERFEITA):** Sua resposta DEVE ser um objeto JSON 100% válido, que possa ser processado por \`JSON.parse()\` sem erros. Preste atenção máxima a vírgulas, chaves e colchetes. A falha em produzir um JSON válido é uma falha crítica da tarefa.
+* **REGRA DE OURO (JSON VÁLIDO):** Sua resposta DEVE ser um array JSON válido.
+* **CAPTURA TOTAL DE DADOS:** Extraia TODAS as colunas das tabelas fornecidas, incluindo pesos, dados de compra e todos os indicadores.
+* **INDICADORES PRÉ-CALCULADOS:** Se o texto de entrada já contém uma tabela de "Indicadores", use os valores dela prioritariamente. Não tente recalcular se o valor já existe explicitamente.
 
-*   **EXTRATOR, NÃO INTERPRETADOR:** Sua única função é EXTRAIR dados, NÃO interpretar, calcular ou corrigir.
-*   **TRANSCRIÇÃO FIEL:** Copie EXATAMENTE os valores das tabelas, mesmo que pareçam inconsistentes.
-*   **PRESERVAÇÃO DE DADOS:** Mantenha TODOS os números, textos e formatação originais.
-*   **SEÇÕES OBRIGATÓRIAS:** Extraia TODAS as seções, incluindo "Quantitativos Consolidados" e "Indicadores".
-*   **PRESERVAÇÃO DE FORMATAÇÃO:** Mantenha a formatação Markdown original em todos os campos de texto.
+**4.0 ESTRUTURA DE DADOS ALVO - JSON COMPLETO**
 
-**🚫 REGRAS ABSOLUTAS DE FIDELIDADE:**
-
-**TRANSCRIÇÃO LITERAL - SUA ÚNICA FUNÇÃO:**
-- EXTRAIA VALORES EXATAMENTE como aparecem no texto original
-- PRESERVE a quantidade de referência original (ex: "100.00 m²" → 100.00, NÃO 1.0)
-- MANTENHA valores aparentemente inconsistentes (ex: quantidade × valorUnitario ≠ valorTotal)
-- COPIE campos NULL/VAZIOS exatamente como estão
-- NÃO PADRONIZE unidades, formatos ou valores
-
-**EXEMPLOS DE FIDELIDADE:**
-- Texto: "Quantidade de Referência: 100.00 m²" → "quantidadeReferencia": 100.00
-- Texto: "Valor Total: 1.050,00" (errado) → "valorTotal": 1050.00 (mantém o "erro")
-- Texto: "Custo Unitário: R$ 25,00 - Custo Total: R$ 30,00" → mantém a inconsistência
-- Texto: campo vazio ou "não informado" → valor null ou string vazia
-
-**SUA MISSÃO: SCANNER, NÃO ENGENHEIOR. TRANSCREVA, NÃO INTERPRETE.**
-
-**METADADOS:**
-- **Código:** Extraia apenas se existir explicitamente no texto
-- **Grupo/Subgrupo:** Sugira com base no contexto, mas NÃO altere valores extraídos
-- **Nota da Importação:** Use para explicar decisões de extração
-
-**ATENÇÃO ESPECIAL PARA SEÇÕES 4 E 5:**
-- **Quantitativos Consolidados:** Extraia TODAS as linhas da tabela de lista de compras
-- **Indicadores:** Extraia TODOS os valores da tabela, incluindo "Valor Total"
-- **NÃO OMITA** nenhuma linha ou coluna, mesmo que pareça redundante
-
-**4.0 ESTRUTURA DE DADOS ALVO - JSON EXEMPLO VÁLIDO**
-
-Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
+Sua saída deve seguir ESTA estrutura exata, preenchendo todos os campos disponíveis no texto original:
 
 \`\`\`json
 [
   {
-    "codigo": "COMP-001",
-    "titulo": "Execução de Contrapiso Regularizador (e=4cm)",
+    "codigo": "COMP-CIVIL-001",
+    "titulo": "Título da Composição",
     "unidade": "m²",
     "quantidadeReferencia": 100.00,
-    "grupo": "Acabamentos",
-    "subgrupo": "Pisos",
-    "tags": ["contrapiso", "regularização", "argamassa"],
-    "classificacaoInterna": "Alta Produtividade",
+    "grupo": "Grupo Principal",
+    "subgrupo": "Subgrupo",
+    "tags": ["tag1", "tag2"],
+    "classificacaoInterna": "técnica / moderada / médio_risco",
     "premissas": {
-      "escopo": "Execução de contrapiso com argamassa industrializada...",
-      "metodo": "Aplicação manual com desempenadeira...",
-      "incluso": "Preparação da base, aplicação da argamassa...",
-      "naoIncluso": "Regularização da base, impermeabilização..."
+      "escopo": "Texto do escopo...",
+      "metodo": "Texto do método...",
+      "incluso": "Texto do incluso...",
+      "naoIncluso": "Texto do não incluso..."
     },
     "insumos": {
       "materiais": [
         {
-          "item": "Argamassa Colante AC-I",
+          "item": "Nome do Material",
           "unidade": "kg",
           "quantidade": 12.5,
           "valorUnitario": 0.85,
-          "valorTotal": 10.63
+          "valorTotal": 10.63,
+          "pesoUnitario": 1.0, 
+          "pesoTotal": 12.5
         }
       ],
       "equipamentos": [
         {
-          "item": "Betoneira 400L",
+          "item": "Nome do Equipamento",
           "unidade": "h",
           "quantidade": 0.02,
           "valorUnitario": 15.0,
-          "valorTotal": 0.3
+          "valorTotal": 0.3,
+          "pesoUnitario": 0,
+          "pesoTotal": 0
         }
       ]
     },
@@ -480,51 +453,63 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
     "quantitativosConsolidados": {
       "listaCompraMateriais": [
         {
-          "item": "Argamassa Colante AC-I",
-          "unidade": "kg",
-          "quantidade": 12.5,
-          "valorUnitario": 0.85,
-          "valorTotal": 10.63
+          "item": "Nome do Material na Compra",
+          "unidadeCompra": "saco 20kg",
+          "quantidadeBruta": 13.0,
+          "quantidadeAComprar": 1,
+          "custoTotalEstimado": 17.0
         }
       ]
     },
     "indicadores": {
-      "custoMateriais_porUnidade": 10.63,
-      "custoEquipamentos_porUnidade": 0.3,
-      "custoMaoDeObra_porUnidade": 3.75,
-      "custoDiretoTotal_porUnidade": 14.68,
-      "custoIndireto_porUnidade": 2.2,
-      "custoTotal_porUnidade": 16.88,
-      "produtividadeMedia_hhPorUnidade": 0.15,
-      "custoMateriais_total": 1063.0,
-      "custoEquipamentos_total": 30.0,
-      "custoMaoDeObra_total": 375.0,
-      "custoDiretoTotal_total": 1468.0,
-      "custoIndireto_total": 220.0,
-      "custoTotal_total": 1688.0,
-      "produtividadeMedia_hhTotal": 15.0
+      "custoMateriaisPorUnidade": 10.63,
+      "custoEquipamentosPorUnidade": 0.3,
+      "custoMaoDeObraPorUnidade": 3.75,
+      "custoDiretoTotalPorUnidade": 14.68,
+      "custoMateriaisTotal": 1063.0,
+      "custoEquipamentosTotal": 30.0,
+      "custoMaoDeObraTotal": 375.0,
+      "custoDiretoTotalTotal": 1468.0,
+      "pesoMateriaisPorUnidade": 12.5,
+      "pesoMateriaisTotal": 1250.0,
+      "volumeEntulhoPorUnidade": 0.05,
+      "volumeEntulhoTotal": 5.0,
+      "maoDeObraDetalhada": [
+         { "funcao": "Pedreiro", "hhPorUnidade": 0.15, "hhTotal": 15.0 }
+      ]
     },
     "guias": {
-      "dicasExecucao": "Aplicar sobre base limpa e umedecida...",
-      "alertasSeguranca": "Utilizar EPI completo...",
-      "criteriosQualidade": "Superfície plana com tolerância de 3mm..."
+      "dicasExecucao": "Texto...",
+      "alertasSeguranca": "Texto...",
+      "criteriosQualidade": "Texto..."
     },
     "analiseEngenheiro": {
-      "nota": "Composição bem estruturada com boa relação custo-benefício",
-      "fontesReferencias": "TCPO 2024, SINAPI 2024",
-      "quadroProdutividade": "Produtividade alinhada com mercado...",
-      "analiseRecomendacao": "Recomendada para obras de médio porte",
-      "notaDaImportacao": "Sugestão: GRUPO [Acabamentos] SUBGRUPO [Pisos] - Composição de contrapiso com especificações claras"
+      "nota": "Texto...",
+      "fontesReferencias": "Texto...",
+      "quadroProdutividade": "Texto...",
+      "analiseRecomendacao": "Texto...",
+      "notaDaImportacao": "Sucesso."
     }
   }
 ]
 \`\`\`
 
-**5.0 FORMATO DE SAÍDA OBRIGATÓRIO**
+**5.0 MAPEAMENTO DE CAMPOS ESPECÍFICOS (ATENÇÃO)**
 
-Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. Sua resposta deve ser parseável diretamente por JSON.parse().
+* **Indicadores:**
+    * "Custo de Materiais" -> \`custoMateriaisPorUnidade\` (e Total)
+    * "Custo de Equipamentos" -> \`custoEquipamentosPorUnidade\` (e Total)
+    * "Custo de Mão de Obra" -> \`custoMaoDeObraPorUnidade\` (e Total)
+    * "CUSTO DIRETO TOTAL" -> \`custoDiretoTotalPorUnidade\` (e Total)
+    * "Peso dos Materiais" -> \`pesoMateriaisPorUnidade\` (e Total)
+    * "Volume de Entulho Gerado" -> \`volumeEntulhoPorUnidade\` (e Total)
+* **Quantitativos Consolidados:**
+    * Extraia a tabela "Lista de Compra de Materiais" para o array \`listaCompraMateriais\`.
+    * Mapeie: "Item" -> \`item\`, "Unidade de Compra" -> \`unidadeCompra\`, "Quantidade Bruta" -> \`quantidadeBruta\`, "Quantidade a Comprar" -> \`quantidadeAComprar\`, "Custo Total Estimado" -> \`custoTotalEstimado\`.
 
-**IMPORTANTE: SEGUA EXATAMENTE A ESTRUTURA ACIMA. NÃO ADICIONE CAMPOS EXTRAS COMO "pesoUnitario" ou "pesoTotal".**
+**6.0 FORMATO DE SAÍDA**
+
+Retorne APENAS o array JSON válido.
 `;
 
     const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
@@ -685,9 +670,9 @@ export const findRelevantCompositionsInBatch = async (newCompositions: (ParsedCo
     const prompt = `
 **1.0 PERSONA E OBJETIVO ESTRATÉGICO**
 Você atuará com uma persona híbrida e de alta especialização: um **Engenheiro de Custos Sênior com "Visão de Dono"** que também é um **Analista de Dados Sênior**, focado em saneamento e normalização de bancos de dados de engenharia. Seus princípios são:
-*   **Precisão do Engenheiro:** Você entende o contexto de uma obra. Sua análise vai além do texto e considera a aplicabilidade prática. Erros de especificação (ex: tipo de cimento, resistência de concreto) são inaceitáveis.
-*   **Rigor do Analista:** Você aplica técnicas de "Entity Resolution" de forma sistemática para identificar duplicatas semânticas, ignorando ruídos de formatação e sintaxe.
-*   **Eficiência de Escala:** Sua missão é processar lotes de dados de forma rápida e precisa, fornecendo um resultado claro e acionável.
+* **Precisão do Engenheiro:** Você entende o contexto de uma obra. Sua análise vai além do texto e considera a aplicabilidade prática. Erros de especificação (ex: tipo de cimento, resistência de concreto) são inaceitáveis.
+* **Rigor do Analista:** Você aplica técnicas de "Entity Resolution" de forma sistemática para identificar duplicatas semânticas, ignorando ruídos de formatação e sintaxe.
+* **Eficiência de Escala:** Sua missão é processar lotes de dados de forma rápida e precisa, fornecendo um resultado claro e acionável.
 Seu objetivo final é ser a principal linha de defesa contra a poluição de dados em um sistema de orçamentação, garantindo que a base de composições seja íntegra, confiável e livre de duplicatas.
 
 **2.0 TAREFA**
@@ -709,11 +694,11 @@ Você receberá um lote de "Novas Composições" e uma lista de "Composições E
 \`\`\`
 
 **4.0 REGRAS DE ANÁLISE DE RELEVÂNCIA (SEGUIR COM RIGOR)**
-*   **Pré-Filtro de Categoria:** Primeiro, identifique a categoria principal do serviço (ex: Contrapiso, Alvenaria, Demolição). Compare apenas composições da mesma categoria para evitar resultados absurdos.
-*   **Análise Semântica:** Dê alta relevância para títulos que compartilham especificações técnicas chave (espessuras, materiais, métodos). A ordem das palavras não importa.
-*   **Penalização por Conflito Técnico:** Se dois títulos são semanticamente similares mas possuem uma especificação técnica **conflitante** (ex: "Contrapiso 4cm" vs "Contrapiso 5cm"), o score deve ser **significativamente reduzido**. Eles são relacionados, mas não são substitutos diretos.
-*   **Score:** Atribua um \`relevanciaScore\` de 0 a 100.
-*   **Motivo:** Forneça uma explicação curta e objetiva para cada candidato, justificando o score e comparando os pontos-chave. Ex: "Mesmo serviço (sóculo), mas material diferente (Bloco de Concreto vs. Bloco Cerâmico) e altura conflitante (15cm vs 19cm)."
+* **Pré-Filtro de Categoria:** Primeiro, identifique a categoria principal do serviço (ex: Contrapiso, Alvenaria, Demolição). Compare apenas composições da mesma categoria para evitar resultados absurdos.
+* **Análise Semântica:** Dê alta relevância para títulos que compartilham especificações técnicas chave (espessuras, materiais, métodos). A ordem das palavras não importa.
+* **Penalização por Conflito Técnico:** Se dois títulos são semanticamente similares mas possuem uma especificação técnica **conflitante** (ex: "Contrapiso 4cm" vs "Contrapiso 5cm"), o score deve ser **significativamente reduzido**. Eles são relacionados, mas não são substitutos diretos.
+* **Score:** Atribua um \`relevanciaScore\` de 0 a 100.
+* **Motivo:** Forneça uma explicação curta e objetiva para cada candidato, justificando o score e comparando os pontos-chave. Ex: "Mesmo serviço (sóculo), mas material diferente (Bloco de Concreto vs. Bloco Cerâmico) e altura conflitante (15cm vs 19cm)."
 
 **5.0 SAÍDA ESPERADA (Formato JSON OBRIGATÓRIO)**
 Retorne um objeto JSON contendo uma chave "resultados" que é um array de objetos, um para cada nova composição analisada. Se para uma nova composição nenhum candidato for encontrado, retorne um array vazio de candidatos para ela.
