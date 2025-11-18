@@ -1,6 +1,3 @@
-
-
-
 import { Composicao } from '../types';
 
 const createMockComposicao = (
@@ -52,19 +49,23 @@ const createMockComposicao = (
       quadroMaoDeObraTotal: [],
     },
     indicadores: {
-      custoMateriais_porUnidade: custoMat,
-      custoEquipamentos_porUnidade: custoEq,
-      custoMaoDeObra_porUnidade: custoMo,
-      custoDiretoTotal_porUnidade: custoTotalUn,
-      custoMateriais_total: custoMat * qtdRef,
-      custoEquipamentos_total: custoEq * qtdRef,
-      custoMaoDeObra_total: custoMo * qtdRef,
-      custoDiretoTotal_total: custoTotalUn * qtdRef,
+      custoMateriaisPorUnidade: custoMat,
+      custoEquipamentosPorUnidade: custoEq,
+      custoMaoDeObraPorUnidade: custoMo,
+      custoDiretoTotalPorUnidade: custoTotalUn,
+      
+      custoMateriaisTotal: custoMat * qtdRef,
+      custoEquipamentosTotal: custoEq * qtdRef,
+      custoMaoDeObraTotal: custoMo * qtdRef,
+      custoDiretoTotalTotal: custoTotalUn * qtdRef,
+      
       maoDeObraDetalhada: [{ funcao: 'Profissional', hhPorUnidade: 0.8, hhTotal: 0.8 * qtdRef }],
-      pesoMateriais_porUnidade: Math.random() * 10,
-      pesoMateriais_total: Math.random() * 10 * qtdRef,
-      volumeEntulho_porUnidade: Math.random() * 0.01,
-      volumeEntulho_total: Math.random() * 0.01 * qtdRef,
+      
+      pesoMateriaisPorUnidade: Math.random() * 10,
+      pesoMateriaisTotal: Math.random() * 10 * qtdRef,
+      
+      volumeEntulhoPorUnidade: Math.random() * 0.01,
+      volumeEntulhoTotal: Math.random() * 0.01 * qtdRef,
     },
     guias: {
       dicasExecucao: 'Seguir as boas práticas de execução para este tipo de serviço.',
