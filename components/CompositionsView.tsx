@@ -16,7 +16,6 @@ type ReviewableComposicao = ParsedComposicao & {
 };
 
 // --- Full, Read-Only Detail Display for Modal View ---
-// FIX: Export the component to make it available for import in other files.
 export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCopyToClipboard: () => void }> = ({ composition, onCopyToClipboard }) => {
     
     const Section = ({ title, children, noTextColor = false }: { title: string, children?: React.ReactNode, noTextColor?: boolean }) => (
@@ -117,48 +116,56 @@ export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCo
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Materiais</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMateriaisPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMateriaisTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMateriaisPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMateriaisTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Equipamentos */}
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Equipamentos</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoEquipamentosPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoEquipamentosTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoEquipamentosPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoEquipamentosTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Mão de Obra */}
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Mão de Obra</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMaoDeObraPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMaoDeObraTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMaoDeObraPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMaoDeObraTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Direto Total */}
-                    <tr>
-                        <td className="px-4 py-1 font-semibold">Custo Direto Total</td>
+                    <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+                        <td className="px-4 py-1">CUSTO DIRETO TOTAL</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoDiretoTotalPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoDiretoTotalTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoDiretoTotalPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoDiretoTotalTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                    </tr>
+
+                    {/* Linhas Extras de Indicadores (HH, Peso, Entulho) */}
+                    {composition.indicadores?.maoDeObraDetalhada?.map((mo, idx) => (
+                        <tr key={`hh-${idx}`}>
+                            <td className="px-4 py-1 font-semibold">{mo.funcao}</td>
+                            <td className="px-4 py-1">HH</td>
+                            <td className="px-4 py-1 font-mono">{mo.hhPorUnidade?.toFixed(2)}</td>
+                            <td className="px-4 py-1 font-mono">{mo.hhTotal?.toFixed(2)}</td>
+                        </tr>
+                    ))}
+                    
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Peso dos Materiais</td>
+                        <td className="px-4 py-1">kg</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.pesoMateriaisPorUnidade?.toFixed(2)}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.pesoMateriaisTotal?.toFixed(2)}</td>
+                    </tr>
+                    
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Volume de Entulho Gerado</td>
+                        <td className="px-4 py-1">m³</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.volumeEntulhoPorUnidade?.toFixed(3)}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.volumeEntulhoTotal?.toFixed(2)}</td>
                     </tr>
                  </Table>
             </Section>
@@ -330,48 +337,56 @@ const CompositionDetailDisplay: React.FC<{
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Materiais</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMateriaisPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMateriaisTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMateriaisPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMateriaisTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Equipamentos */}
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Equipamentos</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoEquipamentosPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoEquipamentosTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoEquipamentosPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoEquipamentosTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Mão de Obra */}
                     <tr>
                         <td className="px-4 py-1 font-semibold">Custo Mão de Obra</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMaoDeObraPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoMaoDeObraTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMaoDeObraPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoMaoDeObraTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
                     </tr>
                     
                     {/* Custo Direto Total */}
-                    <tr>
-                        <td className="px-4 py-1 font-semibold">Custo Direto Total</td>
+                    <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+                        <td className="px-4 py-1">CUSTO DIRETO TOTAL</td>
                         <td className="px-4 py-1">R$</td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoDiretoTotalPorUnidade?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="px-4 py-1 font-mono">
-                            {composition.indicadores?.custoDiretoTotalTotal?.toFixed(2) || '0.00'}
-                        </td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoDiretoTotalPorUnidade?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.custoDiretoTotalTotal?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}</td>
+                    </tr>
+
+                    {/* Linhas Extras de Indicadores (HH, Peso, Entulho) */}
+                    {composition.indicadores?.maoDeObraDetalhada?.map((mo, idx) => (
+                        <tr key={`hh-${idx}`}>
+                            <td className="px-4 py-1 font-semibold">{mo.funcao}</td>
+                            <td className="px-4 py-1">HH</td>
+                            <td className="px-4 py-1 font-mono">{mo.hhPorUnidade?.toFixed(2)}</td>
+                            <td className="px-4 py-1 font-mono">{mo.hhTotal?.toFixed(2)}</td>
+                        </tr>
+                    ))}
+                    
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Peso dos Materiais</td>
+                        <td className="px-4 py-1">kg</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.pesoMateriaisPorUnidade?.toFixed(2)}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.pesoMateriaisTotal?.toFixed(2)}</td>
+                    </tr>
+                    
+                    <tr>
+                        <td className="px-4 py-1 font-semibold">Volume de Entulho Gerado</td>
+                        <td className="px-4 py-1">m³</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.volumeEntulhoPorUnidade?.toFixed(3)}</td>
+                        <td className="px-4 py-1 font-mono">{composition.indicadores?.volumeEntulhoTotal?.toFixed(2)}</td>
                     </tr>
                  </Table>
             </Section>
