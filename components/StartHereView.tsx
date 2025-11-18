@@ -1,10 +1,8 @@
-
-
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkgfm from 'remark-gfm';
+import remarkGfm from 'remark-gfm';
 import { Button, PaperAirplaneIcon, Spinner, Modal } from './Shared';
 import { answerQueryFromCompositions, type GeminiResponse } from '../services/geminiService';
 import type { Composicao } from '../types';
@@ -23,7 +21,8 @@ const CompositionResultCard: React.FC<{ composition: Composicao, onViewDetails: 
         <p className="font-mono text-xs text-primary">{composition.codigo}</p>
         <p className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">{composition.titulo}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Custo Direto: <span className="font-mono">{composition.indicadores.custoDiretoTotal_porUnidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / {composition.unidade}</span>
+            {/* CORREÇÃO AQUI: Atualizado para camelCase e adicionado optional chaining */}
+            Custo Direto: <span className="font-mono">{composition.indicadores?.custoDiretoTotalPorUnidade?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / {composition.unidade}</span>
         </p>
     </button>
 );
@@ -50,7 +49,7 @@ const ChatBubble: React.FC<{ message: ChatMessage, onViewComposition: (comp: Com
             )}
             <div className={`max-w-2xl rounded-lg p-4 ${isModel ? 'bg-gray-100 dark:bg-gray-800' : 'bg-primary text-white'}`}>
                 <div className={`prose prose-sm max-w-none dark:prose-invert ${!isModel && 'prose-invert'}`}>
-                    <ReactMarkdown remarkPlugins={[remarkgfm]}>{message.text}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
                 </div>
                 {isModel && message.composicoes && message.composicoes.length > 0 && (
                      <div className="mt-4 pt-3 border-t border-gray-300 dark:border-gray-600 space-y-2">
