@@ -14,6 +14,14 @@ import type {
 // Definição única e correta para o resultado do parsing
 export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
 
+// Interface para o resultado da classificação (Movidar para o topo para evitar erros)
+export interface ClassificationResult {
+  grupo: string;
+  subgrupo: string;
+  sugestaoCodigo: string;
+  justificativa: string;
+}
+
 let ai: GoogleGenerativeAI | null = null;
 
 // --- TIPOS DE RESPOSTA PARA O ASK H-QUANT ---
@@ -38,18 +46,19 @@ export type NaoEncontrado = {
 export type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnalitica | NaoEncontrado;
 
 /**
- * Lazily initializes and returns the GoogleGenerativeAI instance.
+ * Inicializa e retorna a instância do GoogleGenerativeAI.
  */
 function getAiInstance() {
     if (ai) {
         return ai;
     }
+    // Busca a chave com prefixo NEXT_PUBLIC_ para funcionar no front-end
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (apiKey) {
         ai = new GoogleGenerativeAI(apiKey);
         return ai;
     }
-    console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
+    console.warn("Gemini AI service is not initialized. Make sure the NEXT_PUBLIC_GEMINI_API_KEY environment variable is set.");
     return null;
 }
 
@@ -147,6 +156,43 @@ const fileToGenerativePart = async (file: File) => {
         },
     };
 };
+
+// ====================================================================================================
+// FUNÇÕES AUXILIARES DE LIMPEZA DE JSON
+// ====================================================================================================
+
+function fixInvalidEscapes(jsonString: string): string {
+    return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
+}
+
+function extractAndCleanJson(text: string): string {
+    let textToParse = text;
+
+    // Extração robusta do JSON do bloco de código
+    const jsonStartMarker = "```json";
+    const jsonEndMarker = "```";
+    let startIndex = textToParse.indexOf(jsonStartMarker);
+    
+    if (startIndex !== -1) {
+        startIndex += jsonStartMarker.length;
+        const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+        if (endIndex > startIndex) {
+            textToParse = textToParse.slice(startIndex, endIndex).trim();
+        }
+    }
+
+    // Remove possíveis marcadores residuais
+    textToParse = textToParse.replace(/```json|```/g, '').trim();
+
+    // Corrige escapes inválidos
+    textToParse = fixInvalidEscapes(textToParse);
+
+    return textToParse;
+}
+
+// ====================================================================================================
+// FUNÇÕES PRINCIPAIS
+// ====================================================================================================
 
 export const analyzeText = async (prompt: string): Promise<string> => {
     const aiInstance = getAiInstance();
@@ -340,43 +386,6 @@ type NaoEncontrado = {
     }
 };
 
-// ====================================================================================================
-// FUNÇÕES AUXILIARES PARA CORREÇÃO DE JSON - MELHORADAS
-// ====================================================================================================
-
-function fixInvalidEscapes(jsonString: string): string {
-    return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
-}
-
-function extractAndCleanJson(text: string): string {
-    let textToParse = text;
-
-    // Extração robusta do JSON do bloco de código
-    const jsonStartMarker = "```json";
-    const jsonEndMarker = "```";
-    let startIndex = textToParse.indexOf(jsonStartMarker);
-    
-    if (startIndex !== -1) {
-        startIndex += jsonStartMarker.length;
-        const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-        if (endIndex > startIndex) {
-            textToParse = textToParse.slice(startIndex, endIndex).trim();
-        }
-    }
-
-    // Remove possíveis marcadores residuais
-    textToParse = textToParse.replace(/```json|```/g, '').trim();
-
-    // Corrige escapes inválidos
-    textToParse = fixInvalidEscapes(textToParse);
-
-    return textToParse;
-}
-
-// ====================================================================================================
-// FUNÇÃO parseCompositions CORRIGIDA - AGORA COM SUPORTE A TODOS OS CAMPOS
-// ====================================================================================================
-
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
     if (!text || text.trim().length < 50) {
         throw new Error("O texto fornecido é muito curto ou inválido para ser uma composição.");
@@ -394,12 +403,12 @@ Sua função é receber um texto de entrada (uma ou mais composições) e extrai
 **3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE E COMPLETUDE**
 
 * **REGRA DE OURO (JSON VÁLIDO):** Sua resposta DEVE ser um array JSON válido.
-* **CAPTURA TOTAL DE DADOS:** Extraia TODAS as colunas das tabelas fornecidas, incluindo pesos, dados de compra e todos os indicadores.
-* **INDICADORES PRÉ-CALCULADOS:** Se o texto de entrada já contém uma tabela de "Indicadores", use os valores dela prioritariamente. Não tente recalcular se o valor já existe explicitamente.
+* **CAPTURA TOTAL DE DADOS:** Extraia TODAS as colunas das tabelas fornecidas.
+* **INDICADORES PRÉ-CALCULADOS:** Se o texto de entrada já contém uma tabela de "Indicadores", use os valores dela prioritariamente.
 
 **4.0 ESTRUTURA DE DADOS ALVO - JSON COMPLETO**
 
-Sua saída deve seguir ESTA estrutura exata, preenchendo todos os campos disponíveis no texto original:
+Sua saída deve seguir ESTA estrutura exata:
 
 \`\`\`json
 [
@@ -493,19 +502,6 @@ Sua saída deve seguir ESTA estrutura exata, preenchendo todos os campos dispon�
   }
 ]
 \`\`\`
-
-**5.0 MAPEAMENTO DE CAMPOS ESPECÍFICOS (ATENÇÃO)**
-
-* **Indicadores:**
-    * "Custo de Materiais" -> \`custoMateriaisPorUnidade\` (e Total)
-    * "Custo de Equipamentos" -> \`custoEquipamentosPorUnidade\` (e Total)
-    * "Custo de Mão de Obra" -> \`custoMaoDeObraPorUnidade\` (e Total)
-    * "CUSTO DIRETO TOTAL" -> \`custoDiretoTotalPorUnidade\` (e Total)
-    * "Peso dos Materiais" -> \`pesoMateriaisPorUnidade\` (e Total)
-    * "Volume de Entulho Gerado" -> \`volumeEntulhoPorUnidade\` (e Total)
-* **Quantitativos Consolidados:**
-    * Extraia a tabela "Lista de Compra de Materiais" para o array \`listaCompraMateriais\`.
-    * Mapeie: "Item" -> \`item\`, "Unidade de Compra" -> \`unidadeCompra\`, "Quantidade Bruta" -> \`quantidadeBruta\`, "Quantidade a Comprar" -> \`quantidadeAComprar\`, "Custo Total Estimado" -> \`custoTotalEstimado\`.
 
 **6.0 FORMATO DE SAÍDA**
 
@@ -805,4 +801,65 @@ export const exportCompositionToMarkdown = (composition: Composicao): string => 
     markdown += `**Análise e Recomendação:** ${composition.analiseEngenheiro?.analiseRecomendacao || ''}\n`;
 
     return markdown;
+};
+
+// ====================================================================================================
+// NOVA FUNÇÃO: CLASSIFICAÇÃO AUTOMÁTICA (Grupo, Subgrupo e Código)
+// ====================================================================================================
+
+export const classifyComposition = async (titulo: string, codigosExistentes: string[] = []): Promise<ClassificationResult> => {
+    const aiInstance = getAiInstance();
+    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+
+    const prompt = `
+    **PERSONA:** Engenheiro de Custos Sênior especialista em taxonomias SINAPI e TCPO.
+
+    **TAREFA:**
+    Analise o título da composição de construção civil abaixo e classifique-a tecnicamente.
+    **NÃO COPIE** simplesmente o nome. Use seu conhecimento de engenharia para deduzir a família correta do serviço.
+
+    **ENTRADA:** "${titulo}"
+
+    **OBJETIVOS:**
+    1. **Grupo:** A categoria macro (ex: Identifique se é "Revestimentos", "Estrutura", "Instalações", "Pisos", "Alvenaria" etc).
+    2. **Subgrupo:** A especificação técnica refinada (ex: Se for Piso, é "Cerâmico"? "Porcelanato"? "Cimentício"?).
+    3. **Sugestão de Código:** Crie um código curto e mnemônico.
+       - Lógica: 3 letras do grupo + 3 letras do subgrupo + numeração (ex: REV.PIS.001).
+       - Analise os códigos existentes (${JSON.stringify(codigosExistentes)}) e sugira o PRÓXIMO da sequência lógica se possível.
+    4. **Justificativa:** Breve explicação técnica do porquê dessa classificação.
+
+    **FORMATO DE SAÍDA (JSON PURO):**
+    Responda APENAS com este objeto JSON:
+    {
+      "grupo": "String",
+      "subgrupo": "String",
+      "sugestaoCodigo": "String",
+      "justificativa": "String"
+    }
+    `;
+
+    try {
+        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        // Usamos o retry para garantir que ele tente de novo se a API falhar rapidinho
+        const result = await withRetry(() => model.generateContent(prompt));
+        const response = result.response;
+        let text = response.text();
+
+        if (typeof text === 'string') {
+            // Limpeza para garantir que venha só o JSON
+            const cleanedText = extractAndCleanJson(text);
+            return JSON.parse(cleanedText) as ClassificationResult;
+        } else {
+            throw new Error("Resposta inválida da IA.");
+        }
+    } catch (error) {
+        console.error("Erro ao classificar composição:", error);
+        // Retorno de fallback para não travar sua tela se a IA falhar
+        return {
+            grupo: "Geral",
+            subgrupo: "Sem classificação",
+            sugestaoCodigo: "GEN.000",
+            justificativa: "Não foi possível classificar automaticamente."
+        };
+    }
 };
