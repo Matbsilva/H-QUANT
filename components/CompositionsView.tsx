@@ -1,7 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Composicao, ComposicaoInsumo, ComposicaoMaoDeObra } from '../types';
 import { Button, SearchIcon, Spinner, Modal, TrashIcon, ClipboardIcon } from './Shared';
-import { parseCompositions, reviseParsedComposition, type ParsedComposicao, findRelevantCompositionsInBatch, type BatchRelevanceResult, exportCompositionToMarkdown } from '../services/geminiService';
+import { 
+    parseCompositions, 
+    reviseParsedComposition, 
+    type ParsedComposicao, 
+    findRelevantCompositionsInBatch, 
+    type BatchRelevanceResult, 
+    exportCompositionToMarkdown,
+    classifyComposition 
+} from '../services/geminiService';
+import { compositionService } from '../services/compositionService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -245,44 +254,44 @@ const CompositionDetailDisplay: React.FC<{
             </div>
 
             {/* Import Note & Code Sugestion */}
-            {composition.analiseEngenheiro?.notaDaImportacao && (
-                <div className="my-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded-md">
-                    <h4 className="font-semibold text-sm text-yellow-800 dark:text-yellow-200">Nota da Importação (IA):</h4>
-                    <div className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap mt-1">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{composition.analiseEngenheiro.notaDaImportacao}</ReactMarkdown>
+            <div className="my-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded-md">
+                <h4 className="font-semibold text-sm text-yellow-800 dark:text-yellow-200">Nota da Importação (IA):</h4>
+                <div className="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap mt-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {(composition.analiseEngenheiro?.notaDaImportacao || '')}
+                    </ReactMarkdown>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Código (Sugerido pela IA)</label>
+                        <input 
+                            type="text" 
+                            value={composition.reviewState.codigo || ''}
+                            onChange={e => onFieldChange(index, 'codigo', e.target.value.toUpperCase())}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                            placeholder="Ex: ACAB-PISOS-01"
+                        />
                     </div>
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Código (Editar)</label>
-                            <input 
-                                type="text" 
-                                value={composition.reviewState.codigo || ''}
-                                onChange={e => onFieldChange(index, 'codigo', e.target.value.toUpperCase())}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
-                                placeholder="Ex: ACAB-PISOS-01"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Grupo (Editar)</label>
-                            <input 
-                                type="text" 
-                                value={composition.reviewState.grupo} 
-                                onChange={e => onFieldChange(index, 'grupo', e.target.value.toUpperCase())}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Subgrupo (Editar)</label>
-                            <input 
-                                type="text" 
-                                value={composition.reviewState.subgrupo} 
-                                onChange={e => onFieldChange(index, 'subgrupo', e.target.value.toUpperCase())}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
-                            />
-                        </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Grupo (Sugerido pela IA)</label>
+                        <input 
+                            type="text" 
+                            value={composition.reviewState.grupo} 
+                            onChange={e => onFieldChange(index, 'grupo', e.target.value.toUpperCase())}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Subgrupo (Sugerido pela IA)</label>
+                        <input 
+                            type="text" 
+                            value={composition.reviewState.subgrupo} 
+                            onChange={e => onFieldChange(index, 'subgrupo', e.target.value.toUpperCase())}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 p-2"
+                        />
                     </div>
                 </div>
-            )}
+            </div>
 
             <Section title="1. Premissas Técnicas e de Escopo">
                  <p><strong>Escopo:</strong> {composition.premissas?.escopo}</p>
@@ -417,28 +426,6 @@ const CompositionDetailDisplay: React.FC<{
                     </div>
                 </div>
             </Section>
-
-            {/* Revision Block */}
-            <div className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-600">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instruções de Correção</label>
-                <textarea
-                    value={composition.reviewState.instruction}
-                    onChange={(e) => onFieldChange(index, 'instruction', e.target.value)}
-                    rows={2}
-                    className="w-full p-2 border rounded-md font-mono text-sm bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                    placeholder="Se houver erros, descreva a correção aqui. Ex: 'O custo do cimento está errado, use R$32,50'..."
-                />
-                <div className="text-right mt-2">
-                    <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => onRequestRevision(index, composition.reviewState.instruction)}
-                        isLoading={composition.reviewState.isRevising}
-                    >
-                        Revisar com IA
-                    </Button>
-                </div>
-            </div>
         </div>
     );
 };
@@ -598,6 +585,20 @@ export const CompositionsView: React.FC<{
     const [compositionToDelete, setCompositionToDelete] = useState<Composicao | null>(null);
     const [compositionToView, setCompositionToView] = useState<Composicao | null>(null);
 
+    // <--- ADICIONADO: Efeito para carregar dados do Supabase ao iniciar
+    useEffect(() => {
+        const loadComposicoes = async () => {
+            try {
+                const data = await compositionService.fetchAll();
+                setComposicoes(data);
+            } catch (err) {
+                console.error("Erro ao carregar composições iniciais:", err);
+                showToast("Erro ao carregar composições do banco.", 'error');
+            }
+        };
+        loadComposicoes();
+    }, [setComposicoes]); // Dependência setComposicoes é segura
+
     const filteredCompositions = useMemo(() => {
         if (!searchQuery) return composicoes;
         return composicoes.filter(c => 
@@ -612,11 +613,19 @@ export const CompositionsView: React.FC<{
         showToast("Composição copiada para a área de transferência!");
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!compositionToDelete) return;
-        setComposicoes(prev => prev.filter(c => c.id !== compositionToDelete.id));
-        showToast(`Composição "${compositionToDelete.titulo}" excluída com sucesso.`);
-        setCompositionToDelete(null);
+
+        // <--- ALTERADO: Deleta no Supabase
+        try {
+            await compositionService.delete(compositionToDelete.id);
+            setComposicoes(prev => prev.filter(c => c.id !== compositionToDelete.id));
+            showToast(`Composição "${compositionToDelete.titulo}" excluída com sucesso.`);
+            setCompositionToDelete(null);
+        } catch (error) {
+            console.error(error);
+            showToast("Erro ao excluir do banco de dados.", 'error');
+        }
     };
 
     const handleTextareaInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
@@ -640,6 +649,7 @@ export const CompositionsView: React.FC<{
         }
         setIsProcessing(true);
         try {
+            // 1. Parseamento Básico
             const parsed = await parseCompositions(compositionText);
 
             const isInvalidInputAlert =
@@ -653,10 +663,42 @@ export const CompositionsView: React.FC<{
                 return;
             }
 
+            // Adiciona IDs temporários
             const parsedWithIds = parsed.map((p, i) => ({ ...p, id: `temp-${i}` }));
-            setParsedCompositions(parsedWithIds);
+
+            // <--- ADICIONADO: Classificação Automática em Paralelo
+            const existingCodes = composicoes.map(c => c.codigo);
             
-            const relevance = await findRelevantCompositionsInBatch(parsedWithIds, composicoes);
+            // Processamos cada item para sugerir Grupo, Subgrupo e Código com IA
+            const enrichedCompositions = await Promise.all(parsedWithIds.map(async (comp) => {
+                if (!comp.titulo) return comp;
+                try {
+                    const classificacao = await classifyComposition(comp.titulo, existingCodes);
+                    
+                    return {
+                        ...comp,
+                        // Prioriza o que foi parseado, se não existir, usa a sugestão da IA
+                        grupo: comp.grupo || classificacao.grupo,
+                        subgrupo: comp.subgrupo || classificacao.subgrupo,
+                        codigo: comp.codigo || classificacao.sugestaoCodigo,
+                        analiseEngenheiro: {
+                            ...comp.analiseEngenheiro,
+                            // Adiciona a justificativa da IA na nota de importação para o usuário ver
+                            notaDaImportacao: (comp.analiseEngenheiro?.notaDaImportacao || '') + 
+                                (classificacao.justificativa ? `\n\n[IA Classificação]: ${classificacao.justificativa}` : '')
+                        }
+                    } as ParsedComposicao & { id: string }; // <--- CORREÇÃO DE TIPO AQUI
+
+                } catch (e) {
+                    console.warn("Erro na classificação automática:", e);
+                    return comp;
+                }
+            }));
+
+            setParsedCompositions(enrichedCompositions);
+            
+            // 2. Verificação de Similaridade (usando os dados enriquecidos)
+            const relevance = await findRelevantCompositionsInBatch(enrichedCompositions, composicoes);
             setRelevanceResults(relevance);
             
             setImportStage('similarity_check');
@@ -741,44 +783,61 @@ export const CompositionsView: React.FC<{
         }
     };
     
-    const handleSalvar = () => {
+    const handleSalvar = async () => { // <--- ALTERADO para async
         if (!composicoesParaRevisao) return;
 
-        const novasComposicoes: Composicao[] = composicoesParaRevisao.map(comp => {
-            // Se o usuário definiu um código manualmente, usa ele
-            // Senão, gera automaticamente como antes
-            let finalCode = comp.reviewState.codigo;
-            
-            if (!finalCode) {
-                const maxSeq = composicoes
-                    .filter(c => c.grupo === comp.reviewState.grupo && c.subgrupo === comp.reviewState.subgrupo)
-                    .map(c => {
-                        const parts = c.codigo.split('-');
-                        return parseInt(parts[parts.length - 1], 10);
-                    })
-                    .reduce((max, current) => Math.max(max, current), 0);
-                
-                const newSeq = (maxSeq + 1).toString().padStart(2, '0');
-                finalCode = `${comp.reviewState.grupo}-${comp.reviewState.subgrupo}-${newSeq}`;
-            }
+        // Mostra loading ou bloqueia UI se necessário (opcional, mas recomendado)
+        
+        try {
+            const savedItems: Composicao[] = []; // <--- CORREÇÃO DE TIPO AQUI (Explicit Any)
 
-            const finalComp: Partial<Composicao> = { ...comp };
-            delete (finalComp as any).reviewState;
+            for (const comp of composicoesParaRevisao) {
+                // Lógica de fallback para código se o usuário deixou vazio
+                let finalCode = comp.reviewState.codigo;
+                
+                if (!finalCode) {
+                    const maxSeq = composicoes
+                        .filter(c => c.grupo === comp.reviewState.grupo && c.subgrupo === comp.reviewState.subgrupo)
+                        .map(c => {
+                            const parts = c.codigo.split('-');
+                            return parseInt(parts[parts.length - 1], 10);
+                        })
+                        .reduce((max, current) => Math.max(max, current), 0);
+                    
+                    const newSeq = (maxSeq + 1).toString().padStart(2, '0');
+                    finalCode = `${comp.reviewState.grupo}-${comp.reviewState.subgrupo}-${newSeq}`;
+                }
+
+                const finalComp: Partial<Composicao> = { ...comp };
+                delete (finalComp as any).reviewState;
+                
+                // Prepara objeto final
+                const dataToSave = {
+                    ...finalComp,
+                    codigo: finalCode,
+                    grupo: comp.reviewState.grupo,
+                    subgrupo: comp.reviewState.subgrupo,
+                };
+
+                // Remove ID temporário (temp-0) para o Supabase criar um UUID real
+                const { id, ...cleanData } = dataToSave as any;
+
+                // <--- ALTERADO: Salva no Supabase
+                const saved = await compositionService.create(cleanData);
+                savedItems.push(saved);
+            }
             
-            return {
-                ...finalComp,
-                id: `comp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                codigo: finalCode,
-                grupo: comp.reviewState.grupo,
-                subgrupo: comp.reviewState.subgrupo,
-            } as Composicao;
-        });
-        
-        setComposicoes(prev => [...prev, ...novasComposicoes]);
-        showToast(`${novasComposicoes.length} nova(s) composição(ões) salva(s) com sucesso!`);
-        
-        resetImportFlow();
-        setActiveTab('pesquisar');
+            // Atualiza estado local com os itens REAIS salvos (com ID correto)
+            setComposicoes(prev => [...prev, ...savedItems]);
+            showToast(`${savedItems.length} nova(s) composição(ões) salva(s) com sucesso!`);
+            
+            resetImportFlow();
+            setActiveTab('pesquisar');
+
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+            showToast("Erro ao salvar no banco de dados.", 'error');
+        }
     };
 
     const TabButton = ({ label, id, active }: { label: string, id: 'importar' | 'pesquisar', active: boolean }) => (
@@ -860,7 +919,7 @@ export const CompositionsView: React.FC<{
                          <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                             <Spinner className="w-8 h-8 mb-4" />
                             <h3 className="text-lg font-semibold dark:text-white">Analisando Composições...</h3>
-                            <p className="text-gray-600 dark:text-gray-400">Verificando similaridade com a base de dados. Isso pode levar alguns instantes.</p>
+                            <p className="text-gray-600 dark:text-gray-400">Verificando similaridade e classificando itens com IA...</p>
                         </div>
                     ) : (
                         renderImportContent()
