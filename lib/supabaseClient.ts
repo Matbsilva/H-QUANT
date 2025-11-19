@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// O "as string" força o tipo, e o "|| ''" garante um valor padrão.
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || '';
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
+// No Next.js, usamos process.env.
+// Variáveis públicas (client-side) devem começar com NEXT_PUBLIC_
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('🚨 ERRO CRÍTICO: Variáveis do Supabase não encontradas.');
