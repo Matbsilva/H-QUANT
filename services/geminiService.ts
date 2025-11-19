@@ -14,7 +14,7 @@ import type {
 // Definição única e correta para o resultado do parsing
 export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
 
-// Interface para o resultado da classificação (Movidar para o topo para evitar erros)
+// --- NOVA INTERFACE ADICIONADA ---
 export interface ClassificationResult {
   grupo: string;
   subgrupo: string;
