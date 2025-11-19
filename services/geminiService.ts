@@ -403,12 +403,12 @@ Sua função é receber um texto de entrada (uma ou mais composições) e extrai
 **3.0 REGRAS DE PROCESSAMENTO - FIDELIDADE E COMPLETUDE**
 
 * **REGRA DE OURO (JSON VÁLIDO):** Sua resposta DEVE ser um array JSON válido.
-* **CAPTURA TOTAL DE DADOS:** Extraia TODAS as colunas das tabelas fornecidas.
-* **INDICADORES PRÉ-CALCULADOS:** Se o texto de entrada já contém uma tabela de "Indicadores", use os valores dela prioritariamente.
+* **CAPTURA TOTAL DE DADOS:** Extraia TODAS as colunas das tabelas fornecidas, incluindo pesos, dados de compra e todos os indicadores.
+* **INDICADORES PRÉ-CALCULADOS:** Se o texto de entrada já contém uma tabela de "Indicadores", use os valores dela prioritariamente. Não tente recalcular se o valor já existe explicitamente.
 
 **4.0 ESTRUTURA DE DADOS ALVO - JSON COMPLETO**
 
-Sua saída deve seguir ESTA estrutura exata:
+Sua saída deve seguir ESTA estrutura exata, preenchendo todos os campos disponíveis no texto original:
 
 \`\`\`json
 [
@@ -502,6 +502,19 @@ Sua saída deve seguir ESTA estrutura exata:
   }
 ]
 \`\`\`
+
+**5.0 MAPEAMENTO DE CAMPOS ESPECÍFICOS (ATENÇÃO)**
+
+* **Indicadores:**
+    * "Custo de Materiais" -> \`custoMateriaisPorUnidade\` (e Total)
+    * "Custo de Equipamentos" -> \`custoEquipamentosPorUnidade\` (e Total)
+    * "Custo de Mão de Obra" -> \`custoMaoDeObraPorUnidade\` (e Total)
+    * "CUSTO DIRETO TOTAL" -> \`custoDiretoTotalPorUnidade\` (e Total)
+    * "Peso dos Materiais" -> \`pesoMateriaisPorUnidade\` (e Total)
+    * "Volume de Entulho Gerado" -> \`volumeEntulhoPorUnidade\` (e Total)
+* **Quantitativos Consolidados:**
+    * Extraia a tabela "Lista de Compra de Materiais" para o array \`listaCompraMateriais\`.
+    * Mapeie: "Item" -> \`item\`, "Unidade de Compra" -> \`unidadeCompra\`, "Quantidade Bruta" -> \`quantidadeBruta\`, "Quantidade a Comprar" -> \`quantidadeAComprar\`, "Custo Total Estimado" -> \`custoTotalEstimado\`.
 
 **6.0 FORMATO DE SAÍDA**
 
