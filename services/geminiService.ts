@@ -1,14 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { 
-    Composicao, 
-    SearchResult,
-    Insumo,
-    Service,
-    Doubt,
-    InternalQuery,
-    ApprovalStatus,
-    RefinementSuggestion,
-    ValueEngineeringAnalysis
+import type {
+  Composicao,
+  SearchResult,
+  Insumo,
+  Service,
+  Doubt,
+  InternalQuery,
+  ApprovalStatus,
+  RefinementSuggestion,
+  ValueEngineeringAnalysis
 } from '../types';
 
 // Definição única e correta para o resultado do parsing
@@ -41,16 +41,16 @@ export type GeminiResponse = RespostaDireta | ListaComposicoes | RespostaAnaliti
  * Lazily initializes and returns the GoogleGenerativeAI instance.
  */
 function getAiInstance() {
-    if (ai) {
-        return ai;
-    }
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (apiKey) {
-        ai = new GoogleGenerativeAI(apiKey);
-        return ai;
-    }
-    console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
-    return null;
+  if (ai) {
+    return ai;
+  }
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (apiKey) {
+    ai = new GoogleGenerativeAI(apiKey);
+    return ai;
+  }
+  console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
+  return null;
 }
 
 // ====================================================================================================
@@ -79,32 +79,32 @@ async function withRetry<T>(
   } = options;
 
   let lastError: Error;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error as Error;
-      
+
       // Verifica se é um erro que vale a pena tentar novamente
       const shouldRetry = isRetryableError(error);
-      
+
       if (!shouldRetry || attempt === maxRetries) {
         throw error;
       }
-      
+
       // Calcula o delay com exponential backoff
       const delay = Math.min(initialDelay * Math.pow(backoffFactor, attempt), maxDelay);
-      
+
       console.warn(`Tentativa ${attempt + 1}/${maxRetries + 1} falhou. Tentando novamente em ${delay}ms...`, {
         error: error instanceof Error ? error.message : 'Erro desconhecido',
         delay
       });
-      
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError!;
 }
 
@@ -113,9 +113,9 @@ async function withRetry<T>(
  */
 function isRetryableError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  
+
   const errorMessage = error.message.toLowerCase();
-  
+
   // Lista de erros que são temporários
   const retryablePatterns = [
     'overloaded',
@@ -130,106 +130,106 @@ function isRetryableError(error: unknown): boolean {
     'network error',
     'connection reset'
   ];
-  
+
   return retryablePatterns.some(pattern => errorMessage.includes(pattern));
 }
 
 const fileToGenerativePart = async (file: File) => {
-    const base64EncodedDataPromise = new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.readAsDataURL(file);
-    });
-    return {
-        inlineData: {
-            data: await base64EncodedDataPromise,
-            mimeType: file.type,
-        },
-    };
+  const base64EncodedDataPromise = new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+  return {
+    inlineData: {
+      data: await base64EncodedDataPromise,
+      mimeType: file.type,
+    },
+  };
 };
 
 export const analyzeText = async (prompt: string): Promise<string> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
-    try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await withRetry(() => model.generateContent(prompt));
-        const response = result.response;
-        const text = response.text();
-        if (typeof text === 'string') {
-            return text;
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao analisar texto:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        throw new Error(`A IA falhou ao analisar o texto: ${errorMessage}`);
+  try {
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await withRetry(() => model.generateContent(prompt));
+    const response = result.response;
+    const text = response.text();
+    if (typeof text === 'string') {
+      return text;
+    } else {
+      console.error("Resposta da IA inválida ou sem texto:", response);
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+  } catch (error) {
+    console.error("Erro ao analisar texto:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`A IA falhou ao analisar o texto: ${errorMessage}`);
+  }
 };
 
 export const analyzeImage = async (prompt: string, image: File): Promise<string> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
-    const imagePart = await fileToGenerativePart(image);
+  const imagePart = await fileToGenerativePart(image);
 
-    try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await withRetry(() => model.generateContent([{ text: prompt }, imagePart]));
-        const response = result.response;
-        const text = response.text();
-        if (typeof text === 'string') {
-            return text;
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao analisar imagem:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        throw new Error(`A IA falhou ao analisar a imagem: ${errorMessage}`);
+  try {
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await withRetry(() => model.generateContent([{ text: prompt }, imagePart]));
+    const response = result.response;
+    const text = response.text();
+    if (typeof text === 'string') {
+      return text;
+    } else {
+      console.error("Resposta da IA inválida ou sem texto:", response);
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+  } catch (error) {
+    console.error("Erro ao analisar imagem:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`A IA falhou ao analisar a imagem: ${errorMessage}`);
+  }
 };
 
 export const generateWithSearch = async (query: string): Promise<SearchResult> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
-    const prompt = `Você é um assistente especialista em engenharia de custos para construção civil chamado "Ask Quantisa". Responda a seguinte pergunta de forma clara e concisa, usando as informações da busca para basear sua resposta. Formate a resposta em HTML, usando listas e negrito quando apropriado. Pergunta: ${query}`;
+  const prompt = `Você é um assistente especialista em engenharia de custos para construção civil chamado "Ask Quantisa". Responda a seguinte pergunta de forma clara e concisa, usando as informações da busca para basear sua resposta. Formate a resposta em HTML, usando listas e negrito quando apropriado. Pergunta: ${query}`;
 
-    try {
-        const model = aiInstance.getGenerativeModel({ 
-            model: 'gemini-2.5-flash'
-        });
-        const result = await withRetry(() => model.generateContent(prompt));
-        const response = result.response;
-        const text = response.text();
+  try {
+    const model = aiInstance.getGenerativeModel({
+      model: 'gemini-2.5-flash'
+    });
+    const result = await withRetry(() => model.generateContent(prompt));
+    const response = result.response;
+    const text = response.text();
 
-        if (typeof text === 'string') {
-            const searchResult: SearchResult = {
-                text: text,
-                metadata: response.candidates?.[0]?.groundingMetadata,
-            };
-            return searchResult;
-        } else {
-            console.error("Resposta da IA inválida ou sem texto para busca:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia durante a busca.");
-        }
-    } catch (error) {
-        console.error("Erro ao gerar resposta com busca:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        return { text: `Ocorreu um erro ao buscar a resposta: ${errorMessage}. Tente novamente.` };
+    if (typeof text === 'string') {
+      const searchResult: SearchResult = {
+        text: text,
+        metadata: response.candidates?.[0]?.groundingMetadata,
+      };
+      return searchResult;
+    } else {
+      console.error("Resposta da IA inválida ou sem texto para busca:", response);
+      throw new Error("A IA retornou uma resposta inválida ou vazia durante a busca.");
     }
+  } catch (error) {
+    console.error("Erro ao gerar resposta com busca:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    return { text: `Ocorreu um erro ao buscar a resposta: ${errorMessage}. Tente novamente.` };
+  }
 };
 
 export const answerQueryFromCompositions = async (query: string, compositions: Composicao[]): Promise<GeminiResponse> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
-    const systemInstruction = `
+  const systemInstruction = `
 **1.0 PERSONA: ASK H-QUANT - SEU ASSISTENTE INTELIGENTE DE COMPOSIÇÕES**
 
 Você é o **"Ask H-Quant"**, o assistente especialista em análise de composições de custos da construção civil. Sua missão é ser **a interface inteligente** que transforma dados brutos em insights acionáveis.
@@ -261,7 +261,7 @@ Você pode analisar QUALQUER aspecto das composições:
 *   **PERGUNTAS TÉCNICAS:** Detalhes sobre métodos, materiais, execução
 `;
 
-    const prompt = `
+  const prompt = `
 **4.0 ESTRUTURA DE RESPOSTA - ESCOLHA INTELIGENTE**
 
 Analise a pergunta do usuário e retorne **UM ÚNICO OBJETO JSON** do tipo mais apropriado:
@@ -317,27 +317,27 @@ type NaoEncontrado = {
 **AGORA ANALISE E RESPONDA:**
 `;
 
-    try {
-        const model = aiInstance.getGenerativeModel({ 
-            model: 'gemini-2.5-flash',
-            systemInstruction: systemInstruction 
-        });
-        const result = await withRetry(() => model.generateContent(prompt));
-        const response = result.response;
-        const text = response.text();
+  try {
+    const model = aiInstance.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: systemInstruction
+    });
+    const result = await withRetry(() => model.generateContent(prompt));
+    const response = result.response;
+    const text = response.text();
 
-        if (typeof text === 'string') {
-            const cleanedText = text.replace(/```json\n?|\n?```/g, '');
-            return JSON.parse(cleanedText) as GeminiResponse;
-        } else {
-            console.error("Resposta da IA inválida ou sem texto:", response);
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-    } catch (error) {
-        console.error("Erro ao buscar nas composições:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        throw new Error(`A IA falhou ao buscar na base de dados de composições: ${errorMessage}`);
+    if (typeof text === 'string') {
+      const cleanedText = text.replace(/```json\n?|\n?```/g, '');
+      return JSON.parse(cleanedText) as GeminiResponse;
+    } else {
+      console.error("Resposta da IA inválida ou sem texto:", response);
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+  } catch (error) {
+    console.error("Erro ao buscar nas composições:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`A IA falhou ao buscar na base de dados de composições: ${errorMessage}`);
+  }
 };
 
 // ====================================================================================================
@@ -345,32 +345,32 @@ type NaoEncontrado = {
 // ====================================================================================================
 
 function fixInvalidEscapes(jsonString: string): string {
-    return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
+  return jsonString.replace(/\\(?!["\\/bfnrtu])/g, '');
 }
 
 function extractAndCleanJson(text: string): string {
-    let textToParse = text;
+  let textToParse = text;
 
-    // Extração robusta do JSON do bloco de código
-    const jsonStartMarker = "```json";
-    const jsonEndMarker = "```";
-    let startIndex = textToParse.indexOf(jsonStartMarker);
-    
-    if (startIndex !== -1) {
-        startIndex += jsonStartMarker.length;
-        const endIndex = textToParse.lastIndexOf(jsonEndMarker);
-        if (endIndex > startIndex) {
-            textToParse = textToParse.slice(startIndex, endIndex).trim();
-        }
+  // Extração robusta do JSON do bloco de código
+  const jsonStartMarker = "```json";
+  const jsonEndMarker = "```";
+  let startIndex = textToParse.indexOf(jsonStartMarker);
+
+  if (startIndex !== -1) {
+    startIndex += jsonStartMarker.length;
+    const endIndex = textToParse.lastIndexOf(jsonEndMarker);
+    if (endIndex > startIndex) {
+      textToParse = textToParse.slice(startIndex, endIndex).trim();
     }
+  }
 
-    // Remove possíveis marcadores residuais
-    textToParse = textToParse.replace(/```json|```/g, '').trim();
+  // Remove possíveis marcadores residuais
+  textToParse = textToParse.replace(/```json|```/g, '').trim();
 
-    // Corrige escapes inválidos
-    textToParse = fixInvalidEscapes(textToParse);
+  // Corrige escapes inválidos
+  textToParse = fixInvalidEscapes(textToParse);
 
-    return textToParse;
+  return textToParse;
 }
 
 // ====================================================================================================
@@ -378,11 +378,11 @@ function extractAndCleanJson(text: string): string {
 // ====================================================================================================
 
 export const parseCompositions = async (text: string): Promise<ParsedComposicao[]> => {
-    if (!text || text.trim().length < 50) {
-        throw new Error("O texto fornecido é muito curto ou inválido para ser uma composição.");
-    }
+  if (!text || text.trim().length < 50) {
+    throw new Error("O texto fornecido é muito curto ou inválido para ser uma composição.");
+  }
 
-    const prompt = `
+  const prompt = `
 **1.0 PERSONA E OBJETIVOS ESTRATÉGICOS**
 
 Você atuará como um Engenheiro Civil Sênior e especialista em orçamentos que opera com uma Visão de Dono absoluta.
@@ -527,102 +527,102 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
 **IMPORTANTE: SEGUA EXATAMENTE A ESTRUTURA ACIMA. NÃO ADICIONE CAMPOS EXTRAS COMO "pesoUnitario" ou "pesoTotal".**
 `;
 
-    const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
+  const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
 
-    try {
-        const aiInstance = getAiInstance();
-        if (!aiInstance) throw new Error("IA não configurada.");
+  try {
+    const aiInstance = getAiInstance();
+    if (!aiInstance) throw new Error("IA não configurada.");
 
-        const model = aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
-        
-        // Usa o sistema de retry para lidar com erros temporários
-        const result = await withRetry(() => model.generateContent(fullPrompt), {
-            maxRetries: 3,
-            initialDelay: 1000,
-            maxDelay: 10000,
-            backoffFactor: 2
-        });
-        
-        const response = result.response;
-        const responseText = response.text();
+    const model = aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        if (!responseText) {
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
+    // Usa o sistema de retry para lidar com erros temporários
+    const result = await withRetry(() => model.generateContent(fullPrompt), {
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffFactor: 2
+    });
 
-        console.log("Resposta bruta da IA:", responseText);
+    const response = result.response;
+    const responseText = response.text();
 
-        let textToParse = extractAndCleanJson(responseText);
-
-        console.log("Texto limpo para parse:", textToParse);
-
-        // VALIDAÇÃO E CORREÇÃO ROBUSTA DO JSON
-        let parsedData;
-        let parseAttempts = 0;
-        const maxParseAttempts = 3;
-
-        while (parseAttempts < maxParseAttempts) {
-            try {
-                parsedData = JSON.parse(textToParse);
-                break; // Se deu certo, sai do loop
-            } catch (parseError) {
-                parseAttempts++;
-                console.warn(`Tentativa ${parseAttempts} de parse falhou:`, parseError);
-                
-                if (parseAttempts === maxParseAttempts) {
-                    console.error("Todas as tentativas de parse falharam:", parseError);
-                    const errorMessage = parseError instanceof Error ? parseError.message : 'Erro desconhecido';
-                    throw new Error(`Não foi possível interpretar o JSON retornado pela IA após ${maxParseAttempts} tentativas. Erro: ${errorMessage}`);
-                }
-
-                // Tenta corrigir problemas comuns de JSON
-                textToParse = textToParse
-                    .replace(/(\w+):/g, '"$1":') // Adiciona aspas em chaves não citadas
-                    .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas trailing
-                    .replace(/,\s*}/g, '}') // Remove vírgulas antes de fechar chaves
-                    .replace(/,\s*]/g, ']') // Remove vírgulas antes de fechar colchetes
-                    .replace(/'/g, '"') // Substitui aspas simples por duplas
-                    .replace(/\\n/g, ' ') // Remove quebras de linha problemáticas
-                    .replace(/\s+/g, ' ') // Normaliza espaços
-                    .trim();
-
-                console.log(`Texto corrigido na tentativa ${parseAttempts}:`, textToParse);
-            }
-        }
-
-        // Validação da estrutura
-        if (Array.isArray(parsedData)) {
-            const validCompositions = parsedData.filter((comp: any) => 
-                comp && typeof comp === 'object' && comp.titulo
-            );
-            
-            if (validCompositions.length === 0) {
-                throw new Error("A IA retornou um array vazio ou sem composições válidas.");
-            }
-            
-            console.log(`✅ ${validCompositions.length} composição(ões) válida(s) extraída(s)`);
-            return validCompositions as ParsedComposicao[];
-        }
-        
-        if (typeof parsedData === 'object' && parsedData !== null && parsedData.titulo) {
-            console.log("✅ 1 composição válida extraída");
-            return [parsedData as ParsedComposicao];
-        }
-        
-        throw new Error("A IA não retornou um array ou objeto de composições válido.");
-
-    } catch (error) {
-        console.error("Erro ao processar composições:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        throw new Error(`Não foi possível interpretar o texto da composição: ${errorMessage}`);
+    if (!responseText) {
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+
+    console.log("Resposta bruta da IA:", responseText);
+
+    let textToParse = extractAndCleanJson(responseText);
+
+    console.log("Texto limpo para parse:", textToParse);
+
+    // VALIDAÇÃO E CORREÇÃO ROBUSTA DO JSON
+    let parsedData;
+    let parseAttempts = 0;
+    const maxParseAttempts = 3;
+
+    while (parseAttempts < maxParseAttempts) {
+      try {
+        parsedData = JSON.parse(textToParse);
+        break; // Se deu certo, sai do loop
+      } catch (parseError) {
+        parseAttempts++;
+        console.warn(`Tentativa ${parseAttempts} de parse falhou:`, parseError);
+
+        if (parseAttempts === maxParseAttempts) {
+          console.error("Todas as tentativas de parse falharam:", parseError);
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Erro desconhecido';
+          throw new Error(`Não foi possível interpretar o JSON retornado pela IA após ${maxParseAttempts} tentativas. Erro: ${errorMessage}`);
+        }
+
+        // Tenta corrigir problemas comuns de JSON
+        textToParse = textToParse
+          .replace(/(\w+):/g, '"$1":') // Adiciona aspas em chaves não citadas
+          .replace(/,(\s*[}\]])/g, '$1') // Remove vírgulas trailing
+          .replace(/,\s*}/g, '}') // Remove vírgulas antes de fechar chaves
+          .replace(/,\s*]/g, ']') // Remove vírgulas antes de fechar colchetes
+          .replace(/'/g, '"') // Substitui aspas simples por duplas
+          .replace(/\\n/g, ' ') // Remove quebras de linha problemáticas
+          .replace(/\s+/g, ' ') // Normaliza espaços
+          .trim();
+
+        console.log(`Texto corrigido na tentativa ${parseAttempts}:`, textToParse);
+      }
+    }
+
+    // Validação da estrutura
+    if (Array.isArray(parsedData)) {
+      const validCompositions = parsedData.filter((comp: any) =>
+        comp && typeof comp === 'object' && comp.titulo
+      );
+
+      if (validCompositions.length === 0) {
+        throw new Error("A IA retornou um array vazio ou sem composições válidas.");
+      }
+
+      console.log(`✅ ${validCompositions.length} composição(ões) válida(s) extraída(s)`);
+      return validCompositions as ParsedComposicao[];
+    }
+
+    if (typeof parsedData === 'object' && parsedData !== null && parsedData.titulo) {
+      console.log("✅ 1 composição válida extraída");
+      return [parsedData as ParsedComposicao];
+    }
+
+    throw new Error("A IA não retornou um array ou objeto de composições válido.");
+
+  } catch (error) {
+    console.error("Erro ao processar composições:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`Não foi possível interpretar o texto da composição: ${errorMessage}`);
+  }
 };
 
 export const reviseParsedComposition = async (composition: ParsedComposicao, instruction: string): Promise<ParsedComposicao> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
-    const prompt = `
+  const prompt = `
         **PERSONA:** Você é um assistente de IA especialista em correção de dados estruturados.
         
         **AÇÃO:** Sua tarefa é revisar um objeto JSON de composição de serviço que foi parseado incorretamente, usando as instruções do usuário para corrigi-lo. Retorne APENAS o objeto JSON corrigido.
@@ -635,31 +635,31 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
         Retorne APENAS o objeto JSON corrigido. Não adicione nenhum texto, explicação ou formatação adicional antes ou depois do objeto JSON. Sua resposta deve ser diretamente parseável por JSON.parse().
     `;
 
-    try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await withRetry(() => model.generateContent(prompt));
-        const response = result.response;
-        let textToParse = response.text();
+  try {
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await withRetry(() => model.generateContent(prompt));
+    const response = result.response;
+    let textToParse = response.text();
 
-        if (typeof textToParse !== 'string') {
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
-        
-        textToParse = extractAndCleanJson(textToParse);
-
-        const parsedData: ParsedComposicao = JSON.parse(textToParse);
-        
-        if (!parsedData.titulo) {
-             throw new Error("A IA retornou um objeto de composição inválido.");
-        }
-
-        return parsedData;
-
-    } catch (error) {
-        console.error("Erro ao revisar composição:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        throw new Error(`Não foi possível aplicar a correção na composição: ${errorMessage}`);
+    if (typeof textToParse !== 'string') {
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+
+    textToParse = extractAndCleanJson(textToParse);
+
+    const parsedData: ParsedComposicao = JSON.parse(textToParse);
+
+    if (!parsedData.titulo) {
+      throw new Error("A IA retornou um objeto de composição inválido.");
+    }
+
+    return parsedData;
+
+  } catch (error) {
+    console.error("Erro ao revisar composição:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`Não foi possível aplicar a correção na composição: ${errorMessage}`);
+  }
 }
 
 export interface BatchRelevanceResult {
@@ -674,15 +674,15 @@ export interface BatchRelevanceResult {
 }
 
 export const findRelevantCompositionsInBatch = async (newCompositions: (ParsedComposicao & { id: string })[], existingCompositions: Composicao[]): Promise<BatchRelevanceResult[]> => {
-    const aiInstance = getAiInstance();
-    if (!aiInstance || newCompositions.length === 0 || existingCompositions.length === 0) {
-        return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
-    }
+  const aiInstance = getAiInstance();
+  if (!aiInstance || newCompositions.length === 0 || existingCompositions.length === 0) {
+    return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
+  }
 
-    const newCompositionsForPrompt = newCompositions.map(c => ({ id: c.id, titulo: c.titulo }));
-    const existingCompositionsForPrompt = existingCompositions.map(c => ({ id: c.id, titulo: c.titulo, escopo: c.premissas.escopo }));
+  const newCompositionsForPrompt = newCompositions.map(c => ({ id: c.id, titulo: c.titulo }));
+  const existingCompositionsForPrompt = existingCompositions.map(c => ({ id: c.id, titulo: c.titulo, escopo: c.premissas.escopo }));
 
-    const prompt = `
+  const prompt = `
 **1.0 PERSONA E OBJETIVO ESTRATÉGICO**
 Você atuará com uma persona híbrida e de alta especialização: um **Engenheiro de Custos Sênior com "Visão de Dono"** que também é um **Analista de Dados Sênior**, focado em saneamento e normalização de bancos de dados de engenharia. Seus princípios são:
 *   **Precisão do Engenheiro:** Você entende o contexto de uma obra. Sua análise vai além do texto e considera a aplicabilidade prática. Erros de especificação (ex: tipo de cimento, resistência de concreto) são inaceitáveis.
@@ -731,93 +731,149 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
 }
 \`\`\`
     `;
-    
-    const payload = {
-        newCompositions: newCompositionsForPrompt,
-        existingCompositions: existingCompositionsForPrompt,
-    };
 
-    const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
-    
-     try {
-        const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        const result = await withRetry(() => model.generateContent(fullPrompt));
-        const response = result.response;
-        const textToParse = response.text();
+  const payload = {
+    newCompositions: newCompositionsForPrompt,
+    existingCompositions: existingCompositionsForPrompt,
+  };
 
-        if (typeof textToParse !== 'string') {
-            throw new Error("A IA retornou uma resposta inválida ou vazia.");
-        }
+  const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
 
-        const cleanedText = extractAndCleanJson(textToParse);
-        const parsedData = JSON.parse(cleanedText);
+  try {
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await withRetry(() => model.generateContent(fullPrompt));
+    const response = result.response;
+    const textToParse = response.text();
 
-        if (parsedData && Array.isArray(parsedData.resultados)) {
-            return parsedData.resultados.map((res: any) => ({
-                ...res,
-                candidatos: res.candidatos.map((cand: any) => ({
-                    ...cand,
-                    escopoResumido: cand.escopoResumido || "Não foi possível extrair o escopo."
-                }))
-            }));
-        }
-
-        return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
-
-    } catch (error) {
-        console.error("Erro ao buscar composições relevantes em lote:", error);
-        return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
+    if (typeof textToParse !== 'string') {
+      throw new Error("A IA retornou uma resposta inválida ou vazia.");
     }
+
+    const cleanedText = extractAndCleanJson(textToParse);
+    const parsedData = JSON.parse(cleanedText);
+
+    if (parsedData && Array.isArray(parsedData.resultados)) {
+      return parsedData.resultados.map((res: any) => ({
+        ...res,
+        candidatos: res.candidatos.map((cand: any) => ({
+          ...cand,
+          escopoResumido: cand.escopoResumido || "Não foi possível extrair o escopo."
+        }))
+      }));
+    }
+
+    return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
+
+  } catch (error) {
+    console.error("Erro ao buscar composições relevantes em lote:", error);
+    return newCompositions.map(c => ({ idNovaComposicao: c.id, candidatos: [] }));
+  }
 }
 
 export const exportCompositionToMarkdown = (composition: Composicao): string => {
-    let markdown = ``;
+  let markdown = ``;
 
-    const createTable = (headers: string[], rows: (string|number)[][]) => {
-        if (!rows || rows.length === 0) return 'N/A\n';
-        let table = `| ${headers.join(' | ')} |\n`;
-        table += `|${headers.map(() => ' :--- ').join('|')}|\n`;
-        rows.forEach(row => {
-            table += `| ${row.join(' | ')} |\n`;
-        });
-        return table;
+  const createTable = (headers: string[], rows: (string | number)[][]) => {
+    if (!rows || rows.length === 0) return 'N/A\n';
+    let table = `| ${headers.join(' | ')} |\n`;
+    table += `|${headers.map(() => ' :--- ').join('|')}|\n`;
+    rows.forEach(row => {
+      table += `| ${row.join(' | ')} |\n`;
+    });
+    return table;
+  };
+
+  markdown += `# 1.0 METADADOS\n`;
+  markdown += `**Título:** ${composition.titulo || ''}\n`;
+  markdown += `**Unidade:** ${composition.unidade || ''}\n`;
+  markdown += `**Quantidade de Referência:** ${composition.quantidadeReferencia || 1}\n\n`;
+
+  markdown += `# 2.0 PREMISSAS TÉCNICAS E DE ESCOPO\n`;
+  markdown += `**Escopo:** ${composition.premissas?.escopo || ''}\n`;
+  markdown += `**Método:** ${composition.premissas?.metodo || ''}\n`;
+  markdown += `**Incluso:** ${composition.premissas?.incluso || ''}\n`;
+  markdown += `**Não Incluso:** ${composition.premissas?.naoIncluso || ''}\n\n`;
+
+  markdown += `# 3.0 LISTA DE INSUMOS E MÃO DE OBRA (para 1,00 ${composition.unidade || 'unidade'})\n\n`;
+
+  markdown += `## 3.1 Materiais\n`;
+  const materialRows = composition.insumos?.materiais?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
+  markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], materialRows) + '\n';
+
+  markdown += `## 3.2 Equipamentos\n`;
+  const equipRows = composition.insumos?.equipamentos?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
+  markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], equipRows) + '\n';
+
+  markdown += `## 3.3 Mão de Obra\n`;
+  const moRows = (composition.maoDeObra || []).map(mo => [mo.funcao, mo.hhPorUnidade, mo.custoUnitario, mo.custoTotal]);
+  markdown += createTable(['Função', 'HH/Unidade', 'Custo Unit.', 'Custo Total'], moRows) + '\n\n';
+
+  markdown += `# 4.0 GUIAS, SEGURANÇA E QUALIDADE\n`;
+  markdown += `**Dicas de Execução:** ${composition.guias?.dicasExecucao || ''}\n`;
+  markdown += `**Alertas de Segurança:** ${composition.guias?.alertasSeguranca || ''}\n`;
+  markdown += `**Critérios de Qualidade:** ${composition.guias?.criteriosQualidade || ''}\n\n`;
+
+  markdown += `# 5.0 ANÁLISE TÉCNICA DO ENGENHEIRO\n`;
+  markdown += `**Nota:** ${composition.analiseEngenheiro?.nota || ''}\n\n`;
+  markdown += `**Fontes e Referências:**\n${composition.analiseEngenheiro?.fontesReferencias || ''}\n\n`;
+  markdown += `**Quadro de Produtividade:**\n${composition.analiseEngenheiro?.quadroProdutividade || ''}\n\n`;
+  markdown += `**Análise e Recomendação:** ${composition.analiseEngenheiro?.analiseRecomendacao || ''}\n`;
+
+  return markdown;
+};
+
+export const classifyComposition = async (titulo: string, codigosExistentes: string[]): Promise<{ sugestaoCodigo: string; grupo: string; subgrupo: string; justificativa: string }> => {
+  const aiInstance = getAiInstance();
+  if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
+
+  const prompt = `
+    **PERSONA:** Você é um Especialista em Taxonomia de Engenharia Civil.
+    
+    **TAREFA:** Analise o título de uma nova composição e uma lista de códigos existentes para sugerir uma classificação (Grupo, Subgrupo) e um novo Código único.
+    
+    **DADOS DE ENTRADA:**
+    - **Título da Nova Composição:** "${titulo}"
+    - **Códigos Existentes (Amostra):** ${JSON.stringify(codigosExistentes.slice(0, 50))}... (total de ${codigosExistentes.length} códigos)
+    
+    **REGRAS DE CLASSIFICAÇÃO:**
+    1. **Grupo/Subgrupo:** Identifique a categoria técnica mais apropriada (ex: "Acabamentos" / "Pisos").
+    2. **Padrão de Código:** O código deve seguir o padrão GRUPO-SUBGRUPO-SEQUENCIAL (ex: ACAB-PISOS-01).
+    3. **Unicidade:** O novo código NÃO pode existir na lista fornecida.
+    4. **Sequencial:** Tente encontrar o próximo número sequencial disponível para o subgrupo.
+    
+    **SAÍDA ESPERADA (JSON PURO):**
+    {
+      "grupo": "String",
+      "subgrupo": "String",
+      "sugestaoCodigo": "String",
+      "justificativa": "Breve explicação da escolha"
+    }
+    `;
+
+  try {
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await withRetry(() => model.generateContent(prompt));
+    const response = result.response;
+    let text = response.text();
+
+    if (typeof text !== 'string') throw new Error("Resposta inválida da IA");
+
+    text = extractAndCleanJson(text);
+    const data = JSON.parse(text);
+
+    return {
+      grupo: data.grupo || 'GERAL',
+      subgrupo: data.subgrupo || 'GERAL',
+      sugestaoCodigo: data.sugestaoCodigo || `NEW-${Math.floor(Math.random() * 1000)}`,
+      justificativa: data.justificativa || 'Classificação automática'
     };
-
-    markdown += `# 1.0 METADADOS\n`;
-    markdown += `**Título:** ${composition.titulo || ''}\n`;
-    markdown += `**Unidade:** ${composition.unidade || ''}\n`;
-    markdown += `**Quantidade de Referência:** ${composition.quantidadeReferencia || 1}\n\n`;
-
-    markdown += `# 2.0 PREMISSAS TÉCNICAS E DE ESCOPO\n`;
-    markdown += `**Escopo:** ${composition.premissas?.escopo || ''}\n`;
-    markdown += `**Método:** ${composition.premissas?.metodo || ''}\n`;
-    markdown += `**Incluso:** ${composition.premissas?.incluso || ''}\n`;
-    markdown += `**Não Incluso:** ${composition.premissas?.naoIncluso || ''}\n\n`;
-
-    markdown += `# 3.0 LISTA DE INSUMOS E MÃO DE OBRA (para 1,00 ${composition.unidade || 'unidade'})\n\n`;
-    
-    markdown += `## 3.1 Materiais\n`;
-    const materialRows = composition.insumos?.materiais?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
-    markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], materialRows) + '\n';
-    
-    markdown += `## 3.2 Equipamentos\n`;
-    const equipRows = composition.insumos?.equipamentos?.map(i => [i.item, i.unidade, i.quantidade, i.valorUnitario, i.valorTotal]) || [];
-    markdown += createTable(['Item', 'Un.', 'Qtd.', 'V.U.', 'V.T.'], equipRows) + '\n';
-
-    markdown += `## 3.3 Mão de Obra\n`;
-    const moRows = (composition.maoDeObra || []).map(mo => [mo.funcao, mo.hhPorUnidade, mo.custoUnitario, mo.custoTotal]);
-    markdown += createTable(['Função', 'HH/Unidade', 'Custo Unit.', 'Custo Total'], moRows) + '\n\n';
-
-    markdown += `# 4.0 GUIAS, SEGURANÇA E QUALIDADE\n`;
-    markdown += `**Dicas de Execução:** ${composition.guias?.dicasExecucao || ''}\n`;
-    markdown += `**Alertas de Segurança:** ${composition.guias?.alertasSeguranca || ''}\n`;
-    markdown += `**Critérios de Qualidade:** ${composition.guias?.criteriosQualidade || ''}\n\n`;
-
-    markdown += `# 5.0 ANÁLISE TÉCNICA DO ENGENHEIRO\n`;
-    markdown += `**Nota:** ${composition.analiseEngenheiro?.nota || ''}\n\n`;
-    markdown += `**Fontes e Referências:**\n${composition.analiseEngenheiro?.fontesReferencias || ''}\n\n`;
-    markdown += `**Quadro de Produtividade:**\n${composition.analiseEngenheiro?.quadroProdutividade || ''}\n\n`;
-    markdown += `**Análise e Recomendação:** ${composition.analiseEngenheiro?.analiseRecomendacao || ''}\n`;
-
-    return markdown;
+  } catch (error) {
+    console.error("Erro ao classificar composição:", error);
+    return {
+      grupo: 'GERAL',
+      subgrupo: 'GERAL',
+      sugestaoCodigo: '',
+      justificativa: 'Erro na classificação automática.'
+    };
+  }
 };
