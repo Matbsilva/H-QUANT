@@ -4,17 +4,7 @@ import remarkGfm from 'remark-gfm';
 import type { Composicao, ComposicaoInsumo, ComposicaoMaoDeObra } from '../types';
 import { Button, SearchIcon, Spinner, Modal, TrashIcon, ClipboardIcon } from './Shared';
 import { compositionService } from '../services/compositionService';
-import { classifyComposition, parseCompositions, findRelevantCompositionsInBatch, reviseParsedComposition } from '../services/geminiService';
-
-interface ParsedComposicao extends Omit<Partial<Composicao>, 'analiseEngenheiro'> {
-    analiseEngenheiro?: {
-        notaDaImportacao?: string;
-        nota?: string;
-        fontesReferencias?: string;
-        quadroProdutividade?: string;
-        analiseRecomendacao?: string;
-    };
-}
+import { classifyComposition, parseCompositions, findRelevantCompositionsInBatch, reviseParsedComposition, ParsedComposicao } from '../services/geminiService';
 
 interface BatchRelevanceResult {
     idNovaComposicao: string;

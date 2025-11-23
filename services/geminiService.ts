@@ -12,7 +12,15 @@ import type {
 } from '../types';
 
 // Definição única e correta para o resultado do parsing
-export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
+export interface ParsedComposicao extends Omit<Partial<Composicao>, 'analiseEngenheiro'> {
+  analiseEngenheiro?: {
+    notaDaImportacao?: string;
+    nota?: string;
+    fontesReferencias?: string;
+    quadroProdutividade?: string;
+    analiseRecomendacao?: string;
+  };
+}
 
 let ai: GoogleGenerativeAI | null = null;
 
