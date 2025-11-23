@@ -143,3 +143,12 @@ Nossa próxima ação é gerar o código completo e correto da função `parseCo
 Ok. Com base no resumo, nosso próximo passo é corrigir o erro de sintaxe de forma definitiva. Por favor, gere para mim o código completo e final da função parseCompositions para o arquivo geminiService.ts. Esta nova versão deve usar a lógica de extração de JSON com indexOf e slice, sem nenhuma Expressão Regular. A função deve ser completa para que eu possa copiá-la e substituí-la manualmente no meu projeto.
 ```
 ---
+[sábado, 23 de novembro de 2025] - FASE 1, TAREFA 1: Integração com Supabase e Identidade Visual
+Objetivo: Substituir o uso de dados mockados pela persistência real no Supabase e adicionar o logo da aplicação.
+Análise e Arquitetura da Solução: A transição para o Supabase exigiu a refatoração do `App.tsx` para carregar dados via `compositionService` e do `CompositionsView.tsx` para realizar operações de criação e exclusão no banco. Durante a refatoração, foi necessário reconstruir partes do `CompositionsView.tsx` para corrigir erros de lint e restaurar lógicas de importação e classificação via IA que haviam sido perdidas. Além disso, o arquivo `LOGO.png` foi movido para a pasta `public` para ser servido corretamente pelo Next.js.
+Modificações Realizadas:
+App.tsx: Substituição do mock data pelo `compositionService.fetchAll()`, remoção de imports de mock e adição da tag `<img>` para o logo.
+components/CompositionsView.tsx: Implementação das chamadas `compositionService.create` e `delete`, restauração de imports (`ReactMarkdown`, `remarkGfm`) e interfaces, e correção de lógica de estado.
+public/logo.png: Criação da pasta `public` e movimentação do arquivo de logo para lá.
+Commit Associado: `feat(core): integrate supabase and add app logo`
+---

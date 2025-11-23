@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { CompositionsView } from './components/CompositionsView';
 import { Button, MoonIcon, SunIcon } from './components/Shared';
 import type { Composicao } from './types';
-import { mockComposicoes } from './services/mockData';
+import { compositionService } from './services/compositionService';
 import { StartHereView } from './components/StartHereView';
 
 // --- TOAST NOTIFICATION ---
@@ -87,7 +87,16 @@ const App: React.FC = () => {
     const [activeView, setActiveView] = useState<'start' | 'compositions'>('start');
 
     useEffect(() => {
-        setComposicoes(mockComposicoes);
+        const loadComposicoes = async () => {
+            try {
+                const data = await compositionService.fetchAll();
+                setComposicoes(data);
+            } catch (error) {
+                console.error("Erro ao carregar composições:", error);
+                showToast("Erro ao carregar dados do servidor.", "error");
+            }
+        };
+        loadComposicoes();
     }, []);
 
     const showToast = (message: string, type: ToastType = 'success') => {
@@ -107,21 +116,21 @@ const App: React.FC = () => {
         <div className="bg-gray-50 dark:bg-gray-900/50 min-h-screen flex flex-col">
             {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
             <header className="flex-shrink-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between h-16 sticky top-0 z-20">
-                 <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center font-bold text-white text-xl flex-shrink-0">H</div>
+                        <img src="/logo.png" alt="H-Quant Logo" className="w-8 h-8 rounded-md object-cover" />
                         <h1 className="hidden sm:block text-2xl font-bold text-primary dark:text-indigo-400">H-Quant</h1>
                     </div>
-                     <nav className="flex items-center gap-2">
+                    <nav className="flex items-center gap-2">
                         <NavButton view="start" label="Comece por Aqui" />
                         <NavButton view="compositions" label="Composições" />
                     </nav>
-                 </div>
-                 <ThemeToggle />
+                </div>
+                <ThemeToggle />
             </header>
             <main className="flex-1 overflow-y-auto">
-                 {activeView === 'start' && <StartHereView composicoes={composicoes} showToast={showToast} />}
-                 {activeView === 'compositions' && <CompositionsView composicoes={composicoes} setComposicoes={setComposicoes} showToast={showToast} />}
+                {activeView === 'start' && <StartHereView composicoes={composicoes} showToast={showToast} />}
+                {activeView === 'compositions' && <CompositionsView composicoes={composicoes} setComposicoes={setComposicoes} showToast={showToast} />}
             </main>
         </div>
     );
