@@ -483,10 +483,10 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
       "listaCompraMateriais": [
         {
           "item": "Argamassa Colante AC-I",
-          "unidade": "kg",
-          "quantidade": 12.5,
-          "valorUnitario": 0.85,
-          "valorTotal": 10.63
+          "unidadeCompra": "kg",
+          "quantidadeBruta": 12.5,
+          "quantidadeAComprar": 13.0,
+          "custoTotalEstimado": 11.05
         }
       ],
       "necessidadeEquipamentos": [
