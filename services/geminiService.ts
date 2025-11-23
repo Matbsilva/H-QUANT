@@ -456,7 +456,9 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
           "unidade": "kg",
           "quantidade": 12.5,
           "valorUnitario": 0.85,
-          "valorTotal": 10.63
+          "valorTotal": 10.63,
+          "pesoUnitario": 1.0,
+          "pesoTotal": 12.5
         }
       ],
       "equipamentos": [
@@ -486,23 +488,53 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
           "valorUnitario": 0.85,
           "valorTotal": 10.63
         }
+      ],
+      "necessidadeEquipamentos": [
+        {
+          "item": "Betoneira 400L",
+          "unidade": "h",
+          "quantidade": 2.0,
+          "valorUnitario": 15.0,
+          "valorTotal": 30.0
+        }
+      ],
+      "quadroMaoDeObraTotal": [
+        {
+          "funcao": "Pedreiro",
+          "hhTotal": 15.0,
+          "custoTotal": 375.0
+        }
       ]
     },
     "indicadores": {
-      "custoMateriais_porUnidade": 10.63,
-      "custoEquipamentos_porUnidade": 0.3,
-      "custoMaoDeObra_porUnidade": 3.75,
-      "custoDiretoTotal_porUnidade": 14.68,
-      "custoIndireto_porUnidade": 2.2,
-      "custoTotal_porUnidade": 16.88,
-      "produtividadeMedia_hhPorUnidade": 0.15,
-      "custoMateriais_total": 1063.0,
-      "custoEquipamentos_total": 30.0,
-      "custoMaoDeObra_total": 375.0,
-      "custoDiretoTotal_total": 1468.0,
-      "custoIndireto_total": 220.0,
-      "custoTotal_total": 1688.0,
-      "produtividadeMedia_hhTotal": 15.0
+      "custoMateriaisPorUnidade": 10.63,
+      "custoEquipamentosPorUnidade": 0.3,
+      "custoMaoDeObraPorUnidade": 3.75,
+      "custoDiretoTotalPorUnidade": 14.68,
+      "custoIndiretoPorUnidade": 2.2,
+      "custoTotalPorUnidade": 16.88,
+      "produtividadeMediaHhPorUnidade": 0.15,
+      
+      "custoMateriaisTotal": 1063.0,
+      "custoEquipamentosTotal": 30.0,
+      "custoMaoDeObraTotal": 375.0,
+      "custoDiretoTotalTotal": 1468.0,
+      "custoIndiretoTotal": 220.0,
+      "custoTotalTotal": 1688.0,
+      "produtividadeMediaHhTotal": 15.0,
+
+      "pesoMateriaisPorUnidade": 12.5,
+      "pesoMateriaisTotal": 1250.0,
+      "volumeEntulhoPorUnidade": 0.0,
+      "volumeEntulhoTotal": 0.0,
+
+      "maoDeObraDetalhada": [
+          {
+              "funcao": "Pedreiro",
+              "hhPorUnidade": 0.15,
+              "hhTotal": 15.0
+          }
+      ]
     },
     "guias": {
       "dicasExecucao": "Aplicar sobre base limpa e umedecida...",
@@ -524,7 +556,7 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
 
 Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. Sua resposta deve ser parseável diretamente por JSON.parse().
 
-**IMPORTANTE: SEGUA EXATAMENTE A ESTRUTURA ACIMA. NÃO ADICIONE CAMPOS EXTRAS COMO "pesoUnitario" ou "pesoTotal".**
+**IMPORTANTE: EXTRAIA TODOS OS CAMPOS POSSÍVEIS, INCLUINDO PESOS E VOLUMES SE DISPONÍVEIS.**
 `;
 
   const fullPrompt = `${prompt}\n\n---\nTexto para Análise:\n---\n${text}`;
