@@ -2,10 +2,9 @@ import { supabase } from '../lib/supabaseClient';
 import { Composicao } from '../types';
 
 export const compositionService = {
-  
+
   // Busca todas as composições do banco (Carregar)
   async fetchAll(): Promise<Composicao[]> {
-    // 'composicoes' é o nome da tabela que você vai criar no SQL Editor do Supabase
     const { data, error } = await supabase
       .from('composicoes')
       .select('*')
@@ -13,11 +12,29 @@ export const compositionService = {
 
     if (error) {
       console.error('Erro ao buscar composições:', error);
-      // Se der erro (ex: tabela não existe), retorna array vazio para não quebrar o app
       return [];
     }
 
     return data as Composicao[];
+  },
+
+  // Busca composições com paginação
+  async fetchPage(page: number, limit: number): Promise<{ data: Composicao[], count: number }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await supabase
+      .from('composicoes')
+      .select('*', { count: 'exact' })
+      .order('titulo', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      console.error('Erro ao buscar página de composições:', error);
+      return { data: [], count: 0 };
+    }
+
+    return { data: data as Composicao[], count: count || 0 };
   },
 
   // Salva uma nova composição (Criar)

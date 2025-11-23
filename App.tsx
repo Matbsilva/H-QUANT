@@ -85,19 +85,41 @@ const App: React.FC = () => {
     const [composicoes, setComposicoes] = useState<Composicao[]>([]);
     const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
     const [activeView, setActiveView] = useState<'start' | 'compositions'>('start');
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const ITEMS_PER_PAGE = 20;
+
+    const loadComposicoes = async (pageToLoad: number, reset = false) => {
+        try {
+            setIsLoadingMore(true);
+            const { data, count } = await compositionService.fetchPage(pageToLoad, ITEMS_PER_PAGE);
+
+            if (reset) {
+                setComposicoes(data);
+            } else {
+                setComposicoes(prev => [...prev, ...data]);
+            }
+
+            setHasMore(data.length === ITEMS_PER_PAGE); // Simplistic check, can be improved with count
+            setPage(pageToLoad);
+        } catch (error) {
+            console.error("Erro ao carregar composições:", error);
+            showToast("Erro ao carregar dados do servidor.", "error");
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     useEffect(() => {
-        const loadComposicoes = async () => {
-            try {
-                const data = await compositionService.fetchAll();
-                setComposicoes(data);
-            } catch (error) {
-                console.error("Erro ao carregar composições:", error);
-                showToast("Erro ao carregar dados do servidor.", "error");
-            }
-        };
-        loadComposicoes();
+        loadComposicoes(1, true);
     }, []);
+
+    const handleLoadMore = () => {
+        if (!isLoadingMore && hasMore) {
+            loadComposicoes(page + 1);
+        }
+    };
 
     const showToast = (message: string, type: ToastType = 'success') => {
         setToast({ message, type });
@@ -130,7 +152,16 @@ const App: React.FC = () => {
             </header>
             <main className="flex-1 overflow-y-auto">
                 {activeView === 'start' && <StartHereView composicoes={composicoes} showToast={showToast} />}
-                {activeView === 'compositions' && <CompositionsView composicoes={composicoes} setComposicoes={setComposicoes} showToast={showToast} />}
+                {activeView === 'compositions' && (
+                    <CompositionsView
+                        composicoes={composicoes}
+                        setComposicoes={setComposicoes}
+                        showToast={showToast}
+                        onLoadMore={handleLoadMore}
+                        hasMore={hasMore}
+                        isLoadingMore={isLoadingMore}
+                    />
+                )}
             </main>
         </div>
     );

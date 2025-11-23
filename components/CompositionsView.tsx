@@ -546,6 +546,7 @@ const SimilarityCheckView: React.FC<{
                                     <div>
                                         <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">Nova Composição: <span className="text-primary">{comp.titulo}</span></h3>
                                     </div>
+
                                     <div className="flex-shrink-0 flex items-center gap-4">
                                         <label className="flex items-center gap-2 text-sm"><input type="radio" name={`decision-${comp.id}`} checked={decisions[comp.id] === 'add'} onChange={() => handleDecisionChange(comp.id, 'add')} className="text-primary focus:ring-primary" />Adicionar</label>
                                         <label className="flex items-center gap-2 text-sm"><input type="radio" name={`decision-${comp.id}`} checked={decisions[comp.id] === 'discard'} onChange={() => handleDecisionChange(comp.id, 'discard')} className="text-primary focus:ring-primary" />Descartar</label>
@@ -590,7 +591,10 @@ export const CompositionsView: React.FC<{
     composicoes: Composicao[];
     setComposicoes: React.Dispatch<React.SetStateAction<Composicao[]>>;
     showToast: (message: string, type?: 'success' | 'error') => void;
-}> = ({ composicoes, setComposicoes, showToast }) => {
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
+}> = ({ composicoes, setComposicoes, showToast, onLoadMore, hasMore = false, isLoadingMore = false }) => {
     const [activeTab, setActiveTab] = useState<'importar' | 'pesquisar'>('importar');
     const [compositionText, setCompositionText] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -869,9 +873,9 @@ export const CompositionsView: React.FC<{
                             </Button>
                         </div>
                     </div>
-                )
+                );
         }
-    }
+    };
 
     return (
         <div className="p-4 md:p-8 flex-1 overflow-y-auto text-base">
@@ -914,16 +918,30 @@ export const CompositionsView: React.FC<{
                         </div>
                         <div className="p-6">
                             {filteredCompositions.length > 0 ? (
-                                <div className="space-y-4">
-                                    {filteredCompositions.map(c => (
-                                        <CompositionSummaryCard
-                                            key={c.id}
-                                            composition={c}
-                                            onViewDetails={() => setCompositionToView(c)}
-                                            onDelete={() => setCompositionToDelete(c)}
-                                        />
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="space-y-4">
+                                        {filteredCompositions.map(c => (
+                                            <CompositionSummaryCard
+                                                key={c.id}
+                                                composition={c}
+                                                onViewDetails={() => setCompositionToView(c)}
+                                                onDelete={() => setCompositionToDelete(c)}
+                                            />
+                                        ))}
+                                    </div>
+                                    {!searchQuery && hasMore && onLoadMore && (
+                                        <div className="mt-6 text-center">
+                                            <Button
+                                                variant="secondary"
+                                                onClick={onLoadMore}
+                                                isLoading={isLoadingMore}
+                                                disabled={isLoadingMore}
+                                            >
+                                                {isLoadingMore ? 'Carregando...' : 'Carregar Mais'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
                             ) : (
                                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
                                     {searchQuery ? `Nenhuma composição encontrada para "${searchQuery}".` : 'Nenhuma composição no banco de dados. Use a aba "Importar" para adicionar.'}
