@@ -6,7 +6,7 @@ import { Button, SearchIcon, Spinner, Modal, TrashIcon, ClipboardIcon } from './
 import { compositionService } from '../services/compositionService';
 import { classifyComposition, parseCompositions, findRelevantCompositionsInBatch, reviseParsedComposition } from '../services/geminiService';
 
-interface ParsedComposicao extends Partial<Composicao> {
+interface ParsedComposicao extends Omit<Partial<Composicao>, 'analiseEngenheiro'> {
     analiseEngenheiro?: {
         notaDaImportacao?: string;
         nota?: string;
@@ -42,8 +42,8 @@ const TabButton = ({ label, id, active, onClick }: { label: string, id: string, 
     <button
         onClick={onClick}
         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${active
-                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
     >
         {label}
