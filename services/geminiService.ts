@@ -565,7 +565,7 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("IA não configurada.");
 
-    const model = aiInstance.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Usa o sistema de retry para lidar com erros temporários
     const result = await withRetry(() => model.generateContent(fullPrompt), {
@@ -668,7 +668,7 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
     `;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await withRetry(() => model.generateContent(prompt));
     const response = result.response;
     let textToParse = response.text();
@@ -772,7 +772,7 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
   const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await withRetry(() => model.generateContent(fullPrompt));
     const response = result.response;
     const textToParse = response.text();
@@ -883,7 +883,7 @@ export const classifyComposition = async (titulo: string, codigosExistentes: str
     `;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await withRetry(() => model.generateContent(prompt));
     const response = result.response;
     let text = response.text();
