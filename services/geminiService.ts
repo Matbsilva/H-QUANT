@@ -910,10 +910,12 @@ export const classifyComposition = async (titulo: string, codigosExistentes: str
     `;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await withRetry(() => model.generateContent(prompt));
-    const response = result.response;
-    let text = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }]
+    }));
+    const response = (result as any).response || result;
+    let text = extractText(response);
 
     if (typeof text !== 'string') throw new Error("Resposta inválida da IA");
 
