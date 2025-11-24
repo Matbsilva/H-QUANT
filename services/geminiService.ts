@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type {
   Composicao,
   SearchResult,
@@ -14,7 +14,7 @@ import type {
 // Definição única e correta para o resultado do parsing
 export type ParsedComposicao = Partial<Omit<Composicao, 'id'>>;
 
-let ai: GoogleGenerativeAI | null = null;
+let ai: GoogleGenAI | null = null;
 
 // --- TIPOS DE RESPOSTA PARA O ASK H-QUANT ---
 export type RespostaDireta = {
@@ -46,7 +46,7 @@ function getAiInstance() {
   }
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   if (apiKey) {
-    ai = new GoogleGenerativeAI(apiKey);
+    ai = new GoogleGenAI({ apiKey });
     return ai;
   }
   console.warn("Gemini AI service is not initialized. Make sure the API_KEY environment variable is set.");
@@ -148,15 +148,28 @@ const fileToGenerativePart = async (file: File) => {
   };
 };
 
+function extractText(response: any): string | null {
+  if (response.text && typeof response.text === 'function') {
+    return response.text();
+  }
+  return response.candidates?.[0]?.content?.parts?.[0]?.text || null;
+}
+
 export const analyzeText = async (prompt: string): Promise<string> => {
   const aiInstance = getAiInstance();
   if (!aiInstance) throw new Error("Serviço de IA não está configurado.");
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await withRetry(() => model.generateContent(prompt));
-    const response = result.response;
-    const text = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }]
+    }));
+
+    // O SDK novo pode retornar a resposta diretamente ou dentro de uma propriedade response
+    // Vamos tentar acessar de forma robusta
+    const response = (result as any).response || result;
+    const text = extractText(response);
+
     if (typeof text === 'string') {
       return text;
     } else {
@@ -177,10 +190,14 @@ export const analyzeImage = async (prompt: string, image: File): Promise<string>
   const imagePart = await fileToGenerativePart(image);
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await withRetry(() => model.generateContent([{ text: prompt }, imagePart]));
-    const response = result.response;
-    const text = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }, imagePart] }]
+    }));
+
+    const response = (result as any).response || result;
+    const text = extractText(response);
+
     if (typeof text === 'string') {
       return text;
     } else {
@@ -201,12 +218,13 @@ export const generateWithSearch = async (query: string): Promise<SearchResult> =
   const prompt = `Você é um assistente especialista em engenharia de custos para construção civil chamado "Ask Quantisa". Responda a seguinte pergunta de forma clara e concisa, usando as informações da busca para basear sua resposta. Formate a resposta em HTML, usando listas e negrito quando apropriado. Pergunta: ${query}`;
 
   try {
-    const model = aiInstance.getGenerativeModel({
-      model: 'gemini-2.5-flash'
-    });
-    const result = await withRetry(() => model.generateContent(prompt));
-    const response = result.response;
-    const text = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }]
+    }));
+
+    const response = (result as any).response || result;
+    const text = extractText(response);
 
     if (typeof text === 'string') {
       const searchResult: SearchResult = {
@@ -318,13 +336,16 @@ type NaoEncontrado = {
 `;
 
   try {
-    const model = aiInstance.getGenerativeModel({
+    const result = await withRetry(() => aiInstance.models.generateContent({
       model: 'gemini-2.5-flash',
-      systemInstruction: systemInstruction
-    });
-    const result = await withRetry(() => model.generateContent(prompt));
-    const response = result.response;
-    const text = response.text();
+      config: {
+        systemInstruction: { parts: [{ text: systemInstruction }] }
+      },
+      contents: [{ parts: [{ text: prompt }] }]
+    }));
+
+    const response = (result as any).response || result;
+    const text = extractText(response);
 
     if (typeof text === 'string') {
       const cleanedText = text.replace(/```json\n?|\n?```/g, '');
@@ -565,18 +586,19 @@ Retorne APENAS um array JSON válido, sem caracteres de escape desnecessários. 
     const aiInstance = getAiInstance();
     if (!aiInstance) throw new Error("IA não configurada.");
 
-    const model = aiInstance.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     // Usa o sistema de retry para lidar com erros temporários
-    const result = await withRetry(() => model.generateContent(fullPrompt), {
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: fullPrompt }] }]
+    }), {
       maxRetries: 3,
       initialDelay: 1000,
       maxDelay: 10000,
       backoffFactor: 2
     });
 
-    const response = result.response;
-    const responseText = response.text();
+    const response = (result as any).response || result;
+    const responseText = extractText(response);
 
     if (!responseText) {
       throw new Error("A IA retornou uma resposta inválida ou vazia.");
@@ -668,10 +690,12 @@ export const reviseParsedComposition = async (composition: ParsedComposicao, ins
     `;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await withRetry(() => model.generateContent(prompt));
-    const response = result.response;
-    let textToParse = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }]
+    }));
+    const response = (result as any).response || result;
+    let textToParse = extractText(response);
 
     if (typeof textToParse !== 'string') {
       throw new Error("A IA retornou uma resposta inválida ou vazia.");
@@ -772,10 +796,13 @@ Retorne um objeto JSON contendo uma chave "resultados" que é um array de objeto
   const fullPrompt = `${prompt}\n\n---\nEntrada JSON:\n---\n${JSON.stringify(payload, null, 2)}`;
 
   try {
-    const model = aiInstance.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const result = await withRetry(() => model.generateContent(fullPrompt));
-    const response = result.response;
-    const textToParse = response.text();
+    const result = await withRetry(() => aiInstance.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: fullPrompt }] }]
+    }));
+
+    const response = (result as any).response || result;
+    const textToParse = extractText(response);
 
     if (typeof textToParse !== 'string') {
       throw new Error("A IA retornou uma resposta inválida ou vazia.");
