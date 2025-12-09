@@ -38,7 +38,36 @@ const TabButton = ({ label, id, active, onClick }: { label: string, id: string, 
     >
         {label}
     </button>
+
 );
+
+const cleanMarkdown = (text: string | undefined | null): string => {
+    if (!text) return '';
+
+    // Split into lines
+    const lines = text.split('\n');
+
+    // Find minimum indentation (ignoring empty lines)
+    let minIndent = Infinity;
+    for (const line of lines) {
+        if (line.trim().length > 0) {
+            const indent = line.match(/^\s*/)?.[0].length || 0;
+            if (indent < minIndent) {
+                minIndent = indent;
+            }
+        }
+    }
+
+    if (minIndent === Infinity) return text; // All lines empty or no indentation found
+
+    // Remove indentation
+    return lines.map(line => {
+        if (line.length >= minIndent) {
+            return line.slice(minIndent);
+        }
+        return line;
+    }).join('\n');
+};
 
 export const FullCompositionDetailView: React.FC<{ composition: Composicao, onCopyToClipboard: () => void }> = ({ composition, onCopyToClipboard }) => {
     const Section = ({ title, children, noTextColor = false }: { title: string, children?: React.ReactNode, noTextColor?: boolean }) => (
@@ -259,15 +288,7 @@ const CompositionDetailDisplay: React.FC<{
                         "{composition.reviewState.justificativaIA}"
                     </p>
                 )}
-
-                {composition.analiseEngenheiro?.notaDaImportacao && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap mt-2 mb-4 border-t border-blue-200 pt-2">
-                        <strong>Nota de Importação:</strong>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{composition.analiseEngenheiro.notaDaImportacao}</ReactMarkdown>
-                    </div>
-                )}
-
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-3 mt-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Código (Editar)</label>
                         <input
@@ -442,7 +463,7 @@ const CompositionDetailDisplay: React.FC<{
                     </Button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
