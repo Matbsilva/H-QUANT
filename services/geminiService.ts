@@ -439,6 +439,17 @@ Sua função é receber um texto de entrada no Padrão Quantisa V1.2.1 e retorna
 
 **SUA MISSÃO: SCANNER, NÃO ENGENHEIOR. TRANSCREVA, NÃO INTERPRETE.**
 
+**3.1 REGRAS DE FORMATAÇÃO VISUAL (MARKDOWN) PARA CAMPOS DE TEXTO LONGO:**
+
+Para os campos dentro de \`analiseEngenheiro\` (especialmente \`fontesReferencias\`, \`nota\`, \`quadroProdutividade\`, \`analiseRecomendacao\`), você DEVE usar formatação Markdown para garantir legibilidade:
+
+1.  **Quebras de Linha:** Use quebras de linha duplas (\`\\n\\n\`) para separar parágrafos ou tópicos distintos. O frontend ignora quebras de linha simples.
+2.  **Negrito:** Use \`**Texto em Negrito**:\` para destacar títulos de seções ou chaves importantes dentro do texto.
+3.  **Separadores:** Se houver múltiplos tópicos no mesmo campo, separe-os claramente.
+
+**Exemplo de Formatação Desejada para \`fontesReferencias\`:**
+"\**Coeficientes de Consumo:** Baseados no TCPO 14...\\n\\n\**Coeficientes de Produtividade:** Adaptados do SINAPI (Ref. 1234)..."
+
 **METADADOS:**
 - **Código:** Extraia apenas se existir explicitamente no texto
 - **Grupo/Subgrupo:** Sugira com base no contexto, mas NÃO altere valores extraídos
@@ -564,8 +575,8 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
     },
     "analiseEngenheiro": {
       "nota": "Composição bem estruturada com boa relação custo-benefício",
-      "fontesReferencias": "TCPO 2024, SINAPI 2024",
-      "quadroProdutividade": "Produtividade alinhada com mercado...",
+      "fontesReferencias": "**Coeficientes de Consumo:** TCPO 2024.\\n\\n**Coeficientes de Produtividade:** SINAPI 2024 (Ref. 87654).",
+      "quadroProdutividade": "**Oficial:** 0.50h/m².\\n\\n**Ajudante:** 0.50h/m².",
       "analiseRecomendacao": "Recomendada para obras de médio porte",
       "notaDaImportacao": "Sugestão: GRUPO [Acabamentos] SUBGRUPO [Pisos] - Composição de contrapiso com especificações claras"
     }
