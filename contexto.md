@@ -159,3 +159,13 @@ Modificações Realizadas:
 components/CompositionsView.tsx: Remoção de `</button>` extra e correção de aninhamento JSX.
 Commit Associado: `fix(ui): fix syntax errors and malformed jsx in CompositionsView`
 ---
+[terça-feira, 9 de dezembro de 2025] - FASE 1, TAREFA 3: Migração para @google/genai e Refinamento de Prompt
+Objetivo: Migrar o serviço de IA da biblioteca depreciada `@google/generative-ai` para a nova `@google/genai`, corrigir erros de build e melhorar a formatação visual das respostas da IA.
+Análise e Arquitetura da Solução: 
+1. Migração de SDK: A biblioteca antiga foi removida e substituída pela nova SDK `@google/genai`. Todas as funções em `geminiService.ts` foram refatoradas para usar a nova classe `GoogleGenAI` e o método `aiInstance.models.generateContent`.
+2. Correção de Build: Foi identificado e corrigido um erro onde a função `classifyComposition` ainda utilizava a sintaxe antiga (`getGenerativeModel`), o que quebrava o build no Vercel.
+3. Formatação Visual: Para resolver o problema de "texto corrido" nas análises da IA, o prompt do sistema foi atualizado com instruções explícitas de Markdown (quebras de linha duplas e negrito) para os campos de `analiseEngenheiro`, garantindo renderização correta no frontend.
+Modificações Realizadas:
+package.json: Substituição de `@google/generative-ai` por `@google/genai`.
+services/geminiService.ts: Refatoração completa para o novo SDK e atualização do prompt de sistema em `parseCompositions` para forçar formatação Markdown rica.
+Commit Associado: `feat(ai): migrate to @google/genai sdk and improve markdown formatting`
