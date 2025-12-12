@@ -176,3 +176,10 @@ Análise e Arquitetura da Solução: Investigou-se o histórico de commits e ide
 Modificações Realizadas:
 services/geminiService.ts: Atualização do prompt na função `parseCompositions` para forçar a geração de tabela Markdown no campo `quadroProdutividade` e correção de erro de sintaxe (uso de backticks em string template).
 Commit Associado: `fix(ai): restore productivity table structure with bold coefficients`
+---
+[quinta-feira, 12 de dezembro de 2025] - FASE 1, TAREFA 5: Implementação de Schema Rígido para Tabela de Produtividade
+Objetivo: Evoluir a extração da tabela "Quadro de Produtividade" de uma cópia literal para uma normalização estruturada em 4 colunas fixas: "Fonte de Referência", "Produtividade", "Variação vs. Adotado" e "Observações".
+Análise e Arquitetura da Solução: Para resolver inconsistências onde a IA replicava layouts variados das imagens (ex: tabelas de 3 colunas vs 4 colunas), foi implementado um prompt de "Schema Rígido". A IA foi instruída a ignorar o layout visual original e forçar o mapeamento dos dados para o padrão de 4 colunas. Além disso, a lógica de cálculo da coluna "Variação" foi explicitamente desativada para evitar alucinações, instruindo o preenchimento com "-" caso a informação não conste na imagem.
+Modificações Realizadas:
+services/geminiService.ts: Refatoração profunda do prompt `parseCompositions` para incluir as "Diretrizes de Importação e Normalização", definindo o schema obrigatório e as regras de mapeamento (ex: Função -> Fonte).
+Commit Associado: `feat(ai): implement rigid 4-column schema for productivity table normalization`

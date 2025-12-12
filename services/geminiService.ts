@@ -446,7 +446,39 @@ Para os campos dentro de \`analiseEngenheiro\` (especialmente \`fontesReferencia
 1.  **Quebras de Linha:** Use quebras de linha duplas (\`\\n\\n\`) para separar parágrafos ou tópicos distintos. O frontend ignora quebras de linha simples.
 2.  **Negrito:** Use \`**Texto em Negrito**:\` para destacar títulos de seções ou chaves importantes dentro do texto.
 3.  **Separadores:** Se houver múltiplos tópicos no mesmo campo, separe-os claramente.
-4.  **Quadro de Produtividade (OBRIGATÓRIO):** Para o campo \`quadroProdutividade\`, você **DEVE SEMPRE** gerar uma **TABELA MARKDOWN** com as colunas: "| Função | Coeficiente de Consumo | Coeficiente de Produtividade |". Use negrito para o conteúdo das células quando apropriado.
+**3.2 DIRETRIZES DE IMPORTAÇÃO E NORMALIZAÇÃO DE TABELAS (SCHEMA RÍGIDO OBRIGATÓRIO)**
+
+**OBJETIVO:**
+Ao extrair dados da seção "Análise Técnica do Engenheiro" ou "Quadro de Produtividade" das imagens fornecidas, você deve **IGNORAR o layout visual original** da tabela e **OBRIGATORIAMENTE** estruturar os dados no **padrão de 4 colunas** definido abaixo.
+
+**SCHEMA OBRIGATÓRIO DE SAÍDA (4 COLUNAS):**
+Para o campo \`quadroProdutividade\`, gere UMA TABELA MARKDOWN contendo EXATAMENTE estas colunas, nesta ordem:
+1. **Fonte de Referência**
+2. **Produtividade (HH/m²)**
+3. **Variação vs. Adotado**
+4. **Observações**
+
+**REGRAS DE MAPEAMENTO E NORMALIZAÇÃO:**
+Se a imagem original tiver um layout diferente (ex: 3 colunas, cabeçalhos diferentes), aplique as seguintes regras de transformação:
+
+1.  **Coluna "Fonte de Referência":**
+    * Mapear dados da coluna visual "Função" ou "Descrição".
+    * Exemplo: Se na imagem estiver escrito "SINAPI (Cód 98555)", isso vai para "Fonte de Referência".
+
+2.  **Coluna "Produtividade (HH/m²)":**
+    * Mapear dados da coluna visual "Coeficiente de Produtividade" ou "Índice".
+    * Se houver apenas traços ou estiver vazio, busque o valor numérico correspondente na linha.
+
+3.  **Coluna "Variação vs. Adotado":**
+    * Se esta coluna não existir visualmente na imagem: PREENCHA COM "-". NÃO TENTE CALCULAR.
+    * Apenas transcreva se houver um valor explícito de porcentagem ou variação na imagem original.
+
+4.  **Coluna "Observações":**
+    * Se esta coluna não existir visualmente na tabela da imagem: Procure por textos de análise logo abaixo da tabela ou na "Nota do Engenheiro" que justifiquem aquele índice (ex: "Inadequado", "Muito baixo").
+    * Se não houver texto explícito, preencha com uma análise sintética baseada na diferença de valores (ex: "Índice inferior ao adotado").
+
+**ATENÇÃO:**
+Jamais crie colunas como "Coeficiente de Consumo" ou deixe colunas vazias sem cabeçalho. O output deve ser sempre estritamente o quadro de 4 colunas padronizado.
 
 **Exemplo de Formatação Desejada para \`fontesReferencias\`:**
 "\**Coeficientes de Consumo:** Baseados no TCPO 14...\\n\\n\**Coeficientes de Produtividade:** Adaptados do SINAPI (Ref. 1234)..."
