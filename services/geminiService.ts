@@ -446,6 +446,7 @@ Para os campos dentro de \`analiseEngenheiro\` (especialmente \`fontesReferencia
 1.  **Quebras de Linha:** Use quebras de linha duplas (\`\\n\\n\`) para separar parágrafos ou tópicos distintos. O frontend ignora quebras de linha simples.
 2.  **Negrito:** Use \`**Texto em Negrito**:\` para destacar títulos de seções ou chaves importantes dentro do texto.
 3.  **Separadores:** Se houver múltiplos tópicos no mesmo campo, separe-os claramente.
+4.  **Quadro de Produtividade (OBRIGATÓRIO):** Para o campo \`quadroProdutividade\`, você **DEVE SEMPRE** gerar uma **TABELA MARKDOWN** com as colunas: "| Função | Coeficiente de Consumo | Coeficiente de Produtividade |". Use negrito para o conteúdo das células quando apropriado.
 
 **Exemplo de Formatação Desejada para \`fontesReferencias\`:**
 "\**Coeficientes de Consumo:** Baseados no TCPO 14...\\n\\n\**Coeficientes de Produtividade:** Adaptados do SINAPI (Ref. 1234)..."
@@ -576,7 +577,7 @@ Sua saída deve seguir ESTA estrutura exata. Este é um exemplo de JSON VÁLIDO:
     "analiseEngenheiro": {
       "nota": "Composição bem estruturada com boa relação custo-benefício",
       "fontesReferencias": "**Coeficientes de Consumo:** TCPO 2024.\\n\\n**Coeficientes de Produtividade:** SINAPI 2024 (Ref. 87654).",
-      "quadroProdutividade": "**Oficial:** 0.50h/m².\\n\\n**Ajudante:** 0.50h/m².",
+      "quadroProdutividade": "| Função | Coeficiente de Consumo | Coeficiente de Produtividade |\\n| :--- | :--- | :--- |\\n| **Pedreiro** | **-** | **0.50 h/m²** |\\n| **Servente** | **-** | **0.50 h/m²** |",
       "analiseRecomendacao": "Recomendada para obras de médio porte",
       "notaDaImportacao": "Sugestão: GRUPO [Acabamentos] SUBGRUPO [Pisos] - Composição de contrapiso com especificações claras"
     }
