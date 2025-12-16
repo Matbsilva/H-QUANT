@@ -182,4 +182,9 @@ Objetivo: Evoluir a extração da tabela "Quadro de Produtividade" de uma cópia
 Análise e Arquitetura da Solução: Para resolver inconsistências onde a IA replicava layouts variados das imagens (ex: tabelas de 3 colunas vs 4 colunas), foi implementado um prompt de "Schema Rígido". A IA foi instruída a ignorar o layout visual original e forçar o mapeamento dos dados para o padrão de 4 colunas. Além disso, a lógica de cálculo da coluna "Variação" foi explicitamente desativada para evitar alucinações, instruindo o preenchimento com "-" caso a informação não conste na imagem.
 Modificações Realizadas:
 services/geminiService.ts: Refatoração profunda do prompt `parseCompositions` para incluir as "Diretrizes de Importação e Normalização", definindo o schema obrigatório e as regras de mapeamento (ex: Função -> Fonte).
-Commit Associado: `feat(ai): implement rigid 4-column schema for productivity table normalization`
+[segunda-feira, 16 de dezembro de 2025] - FASE 1, TAREFA 6: Diagnóstico de Erro de Conexão Supabase
+Objetivo: Diagnosticar a causa da falha `ERR_NAME_NOT_RESOLVED` ao tentar salvar composições no Supabase.
+Análise e Arquitetura da Solução: A aplicação estava falhando silenciosamente ou gerando erros de rede ao tentar conectar ao backend. Uma investigação da infraestrutura revelou que o domínio configurado nas variáveis de ambiente (`dhbycciqtmtryxwcuspn.supabase.co`) não resolve DNS, indicando que o projeto Supabase foi deletado ou pausado. A solução requer intervenção manual do usuário para restaurar o projeto ou atualizar a URL de conexão.
+Modificações Realizadas:
+contexto.md: Atualização do diário com o diagnóstico do problema de infraestrutura.
+Commit Associado: `docs(context): log supabase connection diagnosis and project status`
